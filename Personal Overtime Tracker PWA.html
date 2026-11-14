@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Overtime Tracker</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- jsPDF for direct one-tap PDF download on Android -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* Tactile Punch Button Ripple & Pulse */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.65; }
+      70% { transform: scale(1.12); opacity: 0; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+
+    .punch-pulse-in::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.25);
+      animation: pulse-ring 2.4s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+      pointer-events: none;
+    }
+
+    .punch-pulse-out::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.28);
+      animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+      pointer-events: none;
+    }
+
+    .punch-btn-active:active {
+      transform: scale(0.95);
+    }
+
+    /* Hide scrollbar for clean mobile feel */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- Main Mobile App Container -->
+  <div class="w-full max-w-md mx-auto flex-1 flex flex-col bg-slate-50 min-h-screen shadow-xl relative">
+
+    <!-- Top Dark Navy Header: Date, Live UAE Clock & Summary Cards -->
+    <header class="bg-slate-900 text-white rounded-b-3xl px-5 pt-5 pb-6 shadow-lg">
+      <!-- Top Bar: App Title & Tools Button -->
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">UAE Time (GST)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="installBtn" onclick="triggerInstall()" class="hidden text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full active:scale-95 transition">
+            + Install App
+          </button>
+          <button onclick="openModal('toolsModal')" class="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export & Backup
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Digital Clock & Date -->
+      <div class="text-center my-2">
+        <div id="liveClock" class="text-4xl sm:text-5xl font-extrabold tracking-tight tabular-nums text-white">
+          --:--:--
+        </div>
+        <div id="liveDate" class="text-sm font-medium text-slate-300 mt-1">
+          Loading UAE Date...
+        </div>
+        <div class="text-[11px] text-slate-400 mt-0.5">
+          Duty: Mon–Sat • 8:00 AM – 6:00 PM (OT after 6:00 PM)
+        </div>
+      </div>
+
+      <!-- Prominent Summary Cards: TODAY OT & MONTHLY OT -->
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <!-- TODAY OT -->
+        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">TODAY OT</div>
+          <div id="todayOtDisplay" class="text-2xl font-extrabold text-amber-400 mt-1 tabular-nums">
+            0h 0m
+          </div>
+          <div id="todayOtSub" class="text-[11px] text-slate-400 mt-0.5">
+            0 mins today
+          </div>
+        </div>
+
+        <!-- MONTHLY OT -->
+        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">MONTHLY OT</div>
+          <div id="monthlyOtDisplay" class="text-2xl font-extrabold text-emerald-400 mt-1 tabular-nums">
+            0h 0m
+          </div>
+          <div id="monthlyOtSub" class="text-[11px] text-slate-400 mt-0.5">
+            0 total mins
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Center Punch Section: ONE Single Large IN / OUT Button -->
+    <main class="px-5 py-6 flex flex-col items-center">
+      <!-- Active Session / Weekly Off Status Banner -->
+      <div id="statusBanner" class="w-full text-center mb-5 min-h-[44px] flex flex-col items-center justify-center">
+        <span class="text-xs font-medium text-slate-500">Ready to start duty</span>
+      </div>
+
+      <!-- Single Large Circular Punch Button (Visible Mon-Sat) -->
+      <div id="punchContainer" class="relative flex items-center justify-center my-1">
+        <button
+          id="punchBtn"
+          onclick="handlePunch()"
+          class="relative w-44 h-44 rounded-full bg-emerald-600 text-white shadow-2xl flex flex-col items-center justify-center transition-all duration-200 punch-btn-active punch-pulse-in focus:outline-none border-4 border-white"
+        >
+          <span id="punchBtnLabel" class="text-4xl font-black tracking-wider">IN</span>
+          <span id="punchBtnHint" class="text-xs font-medium text-white/90 mt-1">Tap to Clock In</span>
+        </button>
+      </div>
+
+      <!-- Sunday Weekly Off Card (Shown automatically on Sundays) -->
+      <div id="weeklyOffCard" class="hidden w-full bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-6 text-center my-1 shadow-sm">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 mb-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+        </div>
+        <div class="text-2xl font-black tracking-wide text-indigo-900">WEEKLY OFF</div>
+        <p class="text-xs text-indigo-700 mt-1 font-medium">
+          Sunday is your weekly holiday. No duty or overtime required today.
+        </p>
+      </div>
+
+      <!-- Subtle Undo Last Punch Pill (Appears briefly after a punch to prevent mistakes) -->
+      <div id="undoBar" class="hidden mt-4">
+        <button onclick="undoLastAction()" class="text-xs font-semibold text-slate-600 bg-slate-200 hover:bg-slate-300 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 transition active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+          </svg>
+          <span id="undoText">Undo last punch</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Monthly Records List Section -->
+    <section class="flex-1 bg-white rounded-t-3xl border-t border-slate-200 px-5 pt-5 pb-8 shadow-inner">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Daily OT Records</h2>
+          <p id="recordCountLabel" class="text-xs text-slate-500">0 working days recorded</p>
+        </div>
+
+        <!-- Month Selector -->
+        <div class="relative">
+          <select
+            id="monthSelector"
+            onchange="onMonthChange()"
+            aria-label="Select Month"
+            class="appearance-none bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900"
+          ></select>
+          <svg class="w-4 h-4 text-slate-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Records Container -->
+      <div id="recordsList" class="space-y-2.5">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
+
+    <!-- Non-blocking Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-200 w-[90%] max-w-sm">
+      <div id="toastInner" class="bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl text-center border border-slate-700">
+        Saved
+      </div>
+    </div>
+
+    <!-- Export, Backup & Restore Modal -->
+    <div id="toolsModal" class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-slide-up">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-lg font-extrabold text-slate-900">Export & Data Backup</h3>
+            <p id="modalMonthSubtitle" class="text-xs text-slate-500">Selected Month</p>
+          </div>
+          <button onclick="closeModal('toolsModal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
+            ✕
+          </button>
+        </div>
+
+        <div class="space-y-3 mt-4">
+          <!-- Export PDF -->
+          <button onclick="exportPDF()" class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-900 transition active:scale-[0.99]">
+            <div class="flex items-center gap-3 text-left">
+              <div class="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-xs">PDF</div>
+              <div>
+                <div class="text-sm font-bold">Export Monthly PDF</div>
+                <div class="text-[11px] text-rose-700">Includes Date, IN, OUT, Daily OT & Monthly Total</div>
+              </div>
+            </div>
+            <span class="text-rose-600 font-bold text-sm">→</span>
+          </button>
+
+          <!-- Export CSV -->
+          <button onclick="exportCSV()" class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 transition active:scale-[0.99]">
+            <div class="flex items-center gap-3 text-left">
+              <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">CSV</div>
+              <div>
+                <div class="text-sm font-bold">Export Monthly CSV</div>
+                <div class="text-[11px] text-emerald-700">Spreadsheet compatible (.csv)</div>
+              </div>
+            </div>
+            <span class="text-emerald-600 font-bold text-sm">→</span>
+          </button>
+
+          <div class="pt-2 border-t border-slate-100">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Phone Storage Backup</div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <!-- Backup JSON -->
+              <button onclick="backupData()" class="p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex flex-col items-center justify-center gap-1 transition active:scale-95">
+                <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                </svg>
+                Backup Data
+              </button>
+
+              <!-- Restore JSON -->
+              <label class="p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex flex-col items-center justify-center gap-1 cursor-pointer transition active:scale-95">
+                <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Restore Data
+                <input type="file" id="restoreFileInput" accept=".json,application/json" onchange="restoreData(event)" class="hidden" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="closeModal('toolsModal')" class="w-full mt-5 py-3 rounded-2xl bg-slate-900 text-white text-sm font-bold active:scale-[0.99] transition">
+          Done
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * PERSONAL OVERTIME TRACKER PWA (UAE TIMEZONE: Asia/Dubai)
+     * ============================================================================
+     * - Working days: Monday to Saturday (Sunday = WEEKLY OFF)
+     * - Normal duty: 8:00 AM - 6:00 PM (18:00)
+     * - Overtime rule: Starts strictly after 6:00 PM on working days.
+     *   Before 8:00 AM is NOT counted. Out <= 6:00 PM = 0 OT.
+     * - Single IN/OUT button with duplicate-tap protection & local persistence.
+     */
+
+    const TIMEZONE = 'Asia/Dubai';
+    const STORAGE_KEY_RECORDS = 'uae_ot_records_v1';
+    const STORAGE_KEY_ACTIVE = 'uae_ot_active_session_v1';
+    const COOLDOWN_MS = 3000; // 3-second cooldown to prevent accidental double-tap
+
+    // Application State
+    let records = []; // Array of { id, dateKey, monthKey, inTimeMs, outTimeMs, otMinutes }
+    let activeSession = null; // { dateKey, monthKey, inTimeMs } or null
+    let selectedMonthKey = '';
+    let lastPunchTimestamp = 0;
+    let lastUndoSnapshot = null; // Stores previous state for quick undo
+    let undoTimeoutId = null;
+    let deferredInstallPrompt = null;
+
+    // ============================================================================
+    // 1. UAE TIMEZONE HELPERS (Strict Asia/Dubai calculation regardless of device)
+    // ============================================================================
+
+    /**
+     * Extracts structured UAE date/time components for any epoch ms timestamp.
+     */
+    function getUaeParts(epochMs = Date.now()) {
+      const date = new Date(epochMs);
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      const parts = {};
+      for (const part of formatter.formatToParts(date)) {
+        parts[part.type] = part.value;
+      }
+
+      // Normalize hour '24' to '00' if returned by browser Intl
+      const hour = parts.hour === '24' ? 0 : parseInt(parts.hour, 10);
+      const minute = parseInt(parts.minute, 10);
+      const second = parseInt(parts.second, 10);
+      const year = parseInt(parts.year, 10);
+      const month = parseInt(parts.month, 10);
+      const day = parseInt(parts.day, 10);
+
+      const dateKey = `${parts.year}-${parts.month}-${parts.day}`; // YYYY-MM-DD
+      const monthKey = `${parts.year}-${parts.month}`; // YYYY-MM
+      const isSunday = parts.weekday === 'Sun';
+
+      return {
+        year,
+        month,
+        day,
+        weekday: parts.weekday,
+        hour,
+        minute,
+        second,
+        dateKey,
+        monthKey,
+        isSunday
+      };
+    }
+
+    /**
+     * Converts a UAE dateKey (YYYY-MM-DD) and hour/minute into exact UTC epoch ms.
+     * UAE is fixed UTC+4 year-round (no Daylight Saving Time).
+     */
+    function uaeDateTimeToEpochMs(dateKey, hour, minute = 0, second = 0) {
+      const [y, m, d] = dateKey.split('-').map(Number);
+      // UTC timestamp minus 4 hours gives exact UAE local moment
+      return Date.UTC(y, m - 1, d, hour - 4, minute, second, 0);
+    }
+
+    /**
+     * Formats epoch ms into readable 12-hour UAE time (e.g., "08:05 AM").
+     */
+    function formatUaeTime12h(epochMs) {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).format(new Date(epochMs));
+    }
+
+    /**
+     * Formats dateKey (YYYY-MM-DD) into nice display format (e.g., "Mon, 16 Nov").
+     */
+    function formatDisplayDate(dateKey) {
+      const noonEpoch = uaeDateTimeToEpochMs(dateKey, 12, 0, 0);
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short'
+      }).format(new Date(noonEpoch));
+    }
+
+    /**
+     * Formats monthKey (YYYY-MM) into "November 2026".
+     */
+    function formatMonthLabel(monthKey) {
+      const [y, m] = monthKey.split('-').map(Number);
+      const epoch = Date.UTC(y, m - 1, 15, 12, 0, 0);
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(epoch));
+    }
+
+    /**
+     * Formats total minutes into "Xh Ym".
+     */
+    function formatOtDuration(totalMinutes) {
+      const mins = Math.max(0, Math.floor(totalMinutes));
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h ${m}m`;
+    }
+
+    // ============================================================================
+    // 2. OVERTIME CALCULATION ENGINE
+    // ============================================================================
+
+    /**
+     * Calculates exact overtime in whole minutes according to rules:
+     * - Working days: Monday to Saturday (Sunday = 0 OT).
+     * - Normal duty: 8:00 AM to 6:00 PM (18:00).
+     * - Time before 8:00 AM is NOT counted.
+     * - OT starts strictly after 6:00 PM on the shift's workday.
+     * - If OUT <= 6:00 PM, OT = 0.
+     * - If OUT > 6:00 PM, OT = floor((outMs - effectiveOtStartMs) / 60000).
+     */
+    function calculateSessionOtMinutes(workDateKey, inTimeMs, outTimeMs) {
+      const workParts = getUaeParts(uaeDateTimeToEpochMs(workDateKey, 12, 0, 0));
+      if (workParts.isSunday) {
+        return 0;
+      }
+
+      if (!outTimeMs || outTimeMs <= inTimeMs) {
+        return 0;
+      }
+
+      // 6:00 PM (18:00) on the shift's starting workday in UAE time
+      const sixPmMs = uaeDateTimeToEpochMs(workDateKey, 18, 0, 0);
+
+      // If clocked out at or before 6:00 PM, zero overtime
+      if (outTimeMs <= sixPmMs) {
+        return 0;
+      }
+
+      // OT counts from 6:00 PM (or from IN time if employee clocked in after 6:00 PM)
+      const effectiveOtStartMs = Math.max(inTimeMs, sixPmMs);
+      const diffMs = Math.max(0, outTimeMs - effectiveOtStartMs);
+
+      return Math.floor(diffMs / 60000);
+    }
+
+    // ============================================================================
+    // 3. LOCAL STORAGE PERSISTENCE
+    // ============================================================================
+
+    function loadState() {
+      try {
+        const savedRecords = localStorage.getItem(STORAGE_KEY_RECORDS);
+        records = savedRecords ? JSON.parse(savedRecords) : [];
+        if (!Array.isArray(records)) records = [];
+
+        const savedActive = localStorage.getItem(STORAGE_KEY_ACTIVE);
+        activeSession = savedActive ? JSON.parse(savedActive) : null;
+      } catch (err) {
+        console.error('Failed to read local storage:', err);
+        records = [];
+        activeSession = null;
+      }
+
+      const currentUae = getUaeParts();
+      selectedMonthKey = currentUae.monthKey;
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(records));
+        if (activeSession) {
+          localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(activeSession));
+        } else {
+          localStorage.removeItem(STORAGE_KEY_ACTIVE);
+        }
+      } catch (err) {
+        showToast('Storage error: Unable to save locally.', true);
+      }
+    }
+
+    // ============================================================================
+    // 4. SINGLE IN / OUT BUTTON LOGIC & DUPLICATE PROTECTION
+    // ============================================================================
+
+    function handlePunch() {
+      const nowMs = Date.now();
+      const uaeNow = getUaeParts(nowMs);
+
+      // Guard 1: Sunday Weekly Off check (when trying to clock IN on Sunday)
+      if (!activeSession && uaeNow.isSunday) {
+        showToast('Sunday is WEEKLY OFF. No duty required.');
+        updateUI();
+        return;
+      }
+
+      // Guard 2: Prevent accidental double taps within 3 seconds
+      if (nowMs - lastPunchTimestamp < COOLDOWN_MS) {
+        showToast('Please wait a moment before tapping again.');
+        return;
+      }
+      lastPunchTimestamp = nowMs;
+
+      // Save snapshot for Undo button
+      lastUndoSnapshot = {
+        records: JSON.parse(JSON.stringify(records)),
+        activeSession: activeSession ? { ...activeSession } : null,
+        actionType: activeSession ? 'OUT' : 'IN'
+      };
+
+      if (!activeSession) {
+        // --- FIRST TAP: CLOCK IN ---
+        activeSession = {
+          dateKey: uaeNow.dateKey,
+          monthKey: uaeNow.monthKey,
+          inTimeMs: nowMs
+        };
+        selectedMonthKey = uaeNow.monthKey;
+        saveState();
+        showToast(`Clocked IN at ${formatUaeTime12h(nowMs)}`);
+      } else {
+        // --- SECOND TAP: CLOCK OUT ---
+        const otMinutes = calculateSessionOtMinutes(
+          activeSession.dateKey,
+          activeSession.inTimeMs,
+          nowMs
+        );
+
+        const newRecord = {
+          id: `${activeSession.dateKey}_${activeSession.inTimeMs}`,
+          dateKey: activeSession.dateKey,
+          monthKey: activeSession.monthKey,
+          inTimeMs: activeSession.inTimeMs,
+          outTimeMs: nowMs,
+          otMinutes: otMinutes
+        };
+
+        records.unshift(newRecord);
+        selectedMonthKey = activeSession.monthKey;
+        activeSession = null;
+        saveState();
+
+        const otMsg = otMinutes > 0 ? ` • OT: ${formatOtDuration(otMinutes)}` : ' • 0m OT';
+        showToast(`Clocked OUT at ${formatUaeTime12h(nowMs)}${otMsg}`);
+      }
+
+      // Haptic feedback on Android Chrome if available
+      if (navigator.vibrate) {
+        navigator.vibrate(45);
+      }
+
+      showUndoOption();
+      updateUI();
+    }
+
+    function showUndoOption() {
+      const undoBar = document.getElementById('undoBar');
+      const undoText = document.getElementById('undoText');
+      if (!lastUndoSnapshot) return;
+
+      undoText.textContent = `Undo last ${lastUndoSnapshot.actionType}`;
+      undoBar.classList.remove('hidden');
+
+      if (undoTimeoutId) clearTimeout(undoTimeoutId);
+      undoTimeoutId = setTimeout(() => {
+        undoBar.classList.add('hidden');
+        lastUndoSnapshot = null;
+      }, 15000); // Available for 15 seconds
+    }
+
+    function undoLastAction() {
+      if (!lastUndoSnapshot) return;
+      records = lastUndoSnapshot.records;
+      activeSession = lastUndoSnapshot.activeSession;
+      lastUndoSnapshot = null;
+      lastPunchTimestamp = 0;
+      saveState();
+
+      document.getElementById('undoBar').classList.add('hidden');
+      showToast('Last punch undone');
+      updateUI();
+    }
+
+    // ============================================================================
+    // 5. LIVE CLOCK & UI RENDERING
+    // ============================================================================
+
+    function updateLiveClockAndMetrics() {
+      const nowMs = Date.now();
+      const uae = getUaeParts(nowMs);
+
+      // Update Digital Clock (HH:MM:SS AM/PM)
+      const timeStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }).format(new Date(nowMs));
+      document.getElementById('liveClock').textContent = timeStr;
+
+      // Update Full Date (e.g., "Sunday, 15 November 2026")
+      const dateStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(nowMs));
+      document.getElementById('liveDate').textContent = dateStr;
+
+      // Toggle Sunday WEEKLY OFF vs Punch Button (unless user has an unclosed session from Saturday)
+      const punchContainer = document.getElementById('punchContainer');
+      const weeklyOffCard = document.getElementById('weeklyOffCard');
+      if (uae.isSunday && !activeSession) {
+        punchContainer.classList.add('hidden');
+        weeklyOffCard.classList.remove('hidden');
+      } else {
+        punchContainer.classList.remove('hidden');
+        weeklyOffCard.classList.add('hidden');
+      }
+
+      // Calculate TODAY OT (completed sessions today + live running OT if active today)
+      let todayOtMins = records
+        .filter(r => r.dateKey === uae.dateKey)
+        .reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+
+      let activeRunningOtMins = 0;
+      if (activeSession) {
+        activeRunningOtMins = calculateSessionOtMinutes(
+          activeSession.dateKey,
+          activeSession.inTimeMs,
+          nowMs
+        );
+        if (activeSession.dateKey === uae.dateKey) {
+          todayOtMins += activeRunningOtMins;
+        }
+      }
+
+      document.getElementById('todayOtDisplay').textContent = formatOtDuration(todayOtMins);
+      document.getElementById('todayOtSub').textContent = `${todayOtMins} mins today`;
+
+      // Calculate MONTHLY OT for selected month
+      let monthlyOtMins = records
+        .filter(r => r.monthKey === selectedMonthKey)
+        .reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+
+      // Include live running OT if active session belongs to selected month
+      if (activeSession && activeSession.monthKey === selectedMonthKey) {
+        monthlyOtMins += activeRunningOtMins;
+      }
+
+      document.getElementById('monthlyOtDisplay').textContent = formatOtDuration(monthlyOtMins);
+      document.getElementById('monthlyOtSub').textContent = `${monthlyOtMins} total mins`;
+
+      // Update Live Status Banner while clocked IN
+      const statusBanner = document.getElementById('statusBanner');
+      if (activeSession) {
+        const inTimeFormatted = formatUaeTime12h(activeSession.inTimeMs);
+        const liveOtBadge = activeRunningOtMins > 0
+          ? `<span class="inline-block bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full text-xs mt-1">Running OT: ${formatOtDuration(activeRunningOtMins)}</span>`
+          : `<span class="inline-block bg-slate-200/80 text-slate-600 font-medium px-2.5 py-0.5 rounded-full text-[11px] mt-1">Normal Duty (OT starts after 6:00 PM)</span>`;
+
+        statusBanner.innerHTML = `
+          <div class="text-sm font-bold text-slate-800">
+            Clocked IN at <span class="text-emerald-700">${inTimeFormatted}</span>
+          </div>
+          ${liveOtBadge}
+        `;
+      } else if (uae.isSunday) {
+        statusBanner.innerHTML = `<span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Enjoy your Weekly Off</span>`;
+      } else {
+        statusBanner.innerHTML = `<span class="text-xs font-medium text-slate-500">Tap IN when you start work</span>`;
+      }
+    }
+
+    function updatePunchButtonAppearance() {
+      const btn = document.getElementById('punchBtn');
+      const label = document.getElementById('punchBtnLabel');
+      const hint = document.getElementById('punchBtnHint');
+
+      if (activeSession) {
+        // Clocked IN -> Show OUT button
+        btn.classList.remove('bg-emerald-600', 'punch-pulse-in');
+        btn.classList.add('bg-amber-500', 'punch-pulse-out');
+        label.textContent = 'OUT';
+        hint.textContent = 'Tap to Clock Out';
+      } else {
+        // Clocked OUT -> Show IN button
+        btn.classList.remove('bg-amber-500', 'punch-pulse-out');
+        btn.classList.add('bg-emerald-600', 'punch-pulse-in');
+        label.textContent = 'IN';
+        hint.textContent = 'Tap to Clock In';
+      }
+    }
+
+    function populateMonthSelector() {
+      const selector = document.getElementById('monthSelector');
+      const currentMonthKey = getUaeParts().monthKey;
+
+      // Collect unique months from records + current month
+      const monthSet = new Set([currentMonthKey]);
+      records.forEach(r => {
+        if (r.monthKey) monthSet.add(r.monthKey);
+      });
+      if (activeSession && activeSession.monthKey) {
+        monthSet.add(activeSession.monthKey);
+      }
+
+      // Sort descending (newest month first)
+      const sortedMonths = Array.from(monthSet).sort((a, b) => b.localeCompare(a));
+
+      if (!sortedMonths.includes(selectedMonthKey)) {
+        selectedMonthKey = currentMonthKey;
+      }
+
+      selector.innerHTML = sortedMonths
+        .map(mKey => {
+          const label = formatMonthLabel(mKey);
+          const selected = mKey === selectedMonthKey ? 'selected' : '';
+          return `<option value="${mKey}" ${selected}>${label}</option>`;
+        })
+        .join('');
+
+      document.getElementById('modalMonthSubtitle').textContent = formatMonthLabel(selectedMonthKey);
+    }
+
+    function onMonthChange() {
+      selectedMonthKey = document.getElementById('monthSelector').value;
+      updateUI();
+    }
+
+    function renderRecordsList() {
+      const listEl = document.getElementById('recordsList');
+      const countLabel = document.getElementById('recordCountLabel');
+
+      // Filter records for selected month and sort newest first
+      const monthRecords = records
+        .filter(r => r.monthKey === selectedMonthKey)
+        .sort((a, b) => b.inTimeMs - a.inTimeMs);
+
+      const uniqueDays = new Set(monthRecords.map(r => r.dateKey)).size;
+      countLabel.textContent = `${monthRecords.length} session${monthRecords.length === 1 ? '' : 's'} (${uniqueDays} day${uniqueDays === 1 ? '' : 's'})`;
+
+      if (monthRecords.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-10 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <p class="text-sm font-semibold text-slate-600">No records for ${formatMonthLabel(selectedMonthKey)}</p>
+            <p class="text-xs text-slate-400 mt-1">Tap the IN button above to log your duty.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = monthRecords
+        .map(rec => {
+          const dateLabel = formatDisplayDate(rec.dateKey);
+          const inLabel = formatUaeTime12h(rec.inTimeMs);
+          const outLabel = formatUaeTime12h(rec.outTimeMs);
+          const hasOt = rec.otMinutes > 0;
+          const otFormatted = formatOtDuration(rec.otMinutes);
+
+          return `
+            <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+              <div>
+                <div class="text-sm font-bold text-slate-800">${dateLabel}</div>
+                <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 tabular-nums">
+                  <span class="font-semibold text-emerald-700">IN ${inLabel}</span>
+                  <span>•</span>
+                  <span class="font-semibold text-amber-700">OUT ${outLabel}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="inline-block px-2.5 py-1 rounded-xl text-xs font-extrabold tabular-nums ${
+                  hasOt
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                    : 'bg-slate-200/70 text-slate-500'
+                }">
+                  ${hasOt ? `+${otFormatted}` : '0h 0m'}
+                </span>
+                <div class="text-[10px] font-medium text-slate-400 mt-0.5">OT</div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    function updateUI() {
+      populateMonthSelector();
+      updatePunchButtonAppearance();
+      updateLiveClockAndMetrics();
+      renderRecordsList();
+    }
+
+    // ============================================================================
+    // 6. EXPORT (PDF & CSV) AND BACKUP / RESTORE
+    // ============================================================================
+
+    function getSelectedMonthSortedRecords() {
+      return records
+        .filter(r => r.monthKey === selectedMonthKey)
+        .sort((a, b) => a.inTimeMs - b.inTimeMs); // Chronological order for reports
+    }
+
+    function exportPDF() {
+      const monthRecords = getSelectedMonthSortedRecords();
+      if (monthRecords.length === 0) {
+        showToast('No records to export for this month.');
+        return;
+      }
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const monthTitle = formatMonthLabel(selectedMonthKey);
+
+        // Header
+        doc.setFillColor(15, 23, 42); // Slate-900
+        doc.rect(0, 0, 210, 32, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Monthly Overtime Report', 14, 15);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Period: ${monthTitle}  |  Duty: Mon–Sat (8:00 AM – 6:00 PM UAE)`, 14, 24);
+
+        // Table rows
+        let totalOtMins = 0;
+        const tableRows = monthRecords.map(rec => {
+          totalOtMins += rec.otMinutes || 0;
+          return [
+            rec.dateKey,
+            formatDisplayDate(rec.dateKey).split(',')[0],
+            formatUaeTime12h(rec.inTimeMs),
+            formatUaeTime12h(rec.outTimeMs),
+            formatOtDuration(rec.otMinutes),
+            `${rec.otMinutes} mins`
+          ];
+        });
+
+        doc.autoTable({
+          startY: 38,
+          head: [['Date', 'Day', 'IN Time', 'OUT Time', 'Daily OT', 'OT Mins']],
+          body: tableRows,
+          theme: 'grid',
+          headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 9.5, cellPadding: 3.5 },
+          alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        // Summary Footer Box
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(14, finalY, 182, 18, 3, 3, 'F');
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(
+          `MONTHLY OT TOTAL: ${formatOtDuration(totalOtMins)} (${totalOtMins} minutes)`,
+          20,
+          finalY + 11.5
+        );
+
+        doc.save(`Overtime_Report_${selectedMonthKey}.pdf`);
+        showToast('PDF downloaded!');
+        closeModal('toolsModal');
+      } catch (err) {
+        console.error(err);
+        showToast('Could not generate PDF. Try CSV export.');
+      }
+    }
+
+    function exportCSV() {
+      const monthRecords = getSelectedMonthSortedRecords();
+      if (monthRecords.length === 0) {
+        showToast('No records to export for this month.');
+        return;
+      }
+
+      let totalOtMins = 0;
+      const lines = [
+        ['Date', 'Day', 'IN Time (UAE)', 'OUT Time (UAE)', 'Daily OT', 'OT Minutes'].join(',')
+      ];
+
+      monthRecords.forEach(rec => {
+        totalOtMins += rec.otMinutes || 0;
+        const dayName = formatDisplayDate(rec.dateKey).split(',')[0];
+        lines.push([
+          rec.dateKey,
+          dayName,
+          `"${formatUaeTime12h(rec.inTimeMs)}"`,
+          `"${formatUaeTime12h(rec.outTimeMs)}"`,
+          `"${formatOtDuration(rec.otMinutes)}"`,
+          rec.otMinutes
+        ].join(','));
+      });
+
+      lines.push('');
+      lines.push(['MONTHLY OT TOTAL', '', '', '', `"${formatOtDuration(totalOtMins)}"`, totalOtMins].join(','));
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, `Overtime_${selectedMonthKey}.csv`);
+      showToast('CSV exported!');
+      closeModal('toolsModal');
+    }
+
+    function backupData() {
+      const payload = {
+        app: 'PersonalOvertimeTrackerUAE',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        records,
+        activeSession
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `OT_Backup_${getUaeParts().dateKey}.json`);
+      showToast('Backup file saved!');
+    }
+
+    function restoreData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed || !Array.isArray(parsed.records)) {
+            throw new Error('Invalid backup format');
+          }
+          records = parsed.records;
+          activeSession = parsed.activeSession || null;
+          saveState();
+          updateUI();
+          closeModal('toolsModal');
+          showToast(`Restored ${records.length} records!`);
+        } catch (err) {
+          showToast('Invalid backup file selected.');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // ============================================================================
+    // 7. MODAL & TOAST HELPERS
+    // ============================================================================
+
+    function openModal(id) {
+      document.getElementById('modalMonthSubtitle').textContent = formatMonthLabel(selectedMonthKey);
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const inner = document.getElementById('toastInner');
+      inner.textContent = message;
+      toast.classList.remove('opacity-0');
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2800);
+    }
+
+    // ============================================================================
+    // 8. PWA MANIFEST & SERVICE WORKER SETUP (Android Home Screen Installable)
+    // ============================================================================
+
+    function setupPWA() {
+      // Dynamic SVG App Icon
+      const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0f172a"/><circle cx="256" cy="256" r="160" fill="none" stroke="#10b981" stroke-width="32"/><path d="M256 156v108l72 44" fill="none" stroke="#f59e0b" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const iconUrl = 'data:image/svg+xml;base64,' + btoa(svgIcon);
+
+      const manifest = {
+        name: 'Personal Overtime Tracker',
+        short_name: 'OT Tracker',
+        description: 'Simple one-tap personal overtime tracker for UAE schedule.',
+        start_url: '.',
+        display: 'standalone',
+        background_color: '#0f172a',
+        theme_color: '#0f172a',
+        orientation: 'portrait',
+        icons: [
+          {
+            src: iconUrl,
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
+        ]
+      };
+
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = URL.createObjectURL(manifestBlob);
+      document.head.appendChild(manifestLink);
+
+      // Register minimal inline Service Worker if supported over HTTPS/localhost
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+        const swCode = `
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => self.clients.claim());
+          self.addEventListener('fetch', e => {
+            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+          });
+        `;
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+      }
+
+      // Listen for Android Chrome install prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        document.getElementById('installBtn').classList.remove('hidden');
+      });
+    }
+
+    async function triggerInstall() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        document.getElementById('installBtn').classList.add('hidden');
+      }
+      deferredInstallPrompt = null;
+    }
+
+    // ============================================================================
+    // 9. INITIALIZE APP
+    // ============================================================================
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      setupPWA();
+      updateUI();
+
+      // Update clock and live OT counters every second
+      setInterval(updateLiveClockAndMetrics, 1000);
+    });
+  </script>
+</body>
+</html>
