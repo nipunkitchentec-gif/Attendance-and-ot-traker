@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Overtime Tracker - Personal OT App</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- jsPDF for direct one-tap PDF download on Android -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    /* Smooth pulse animation for active shift indicator */
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      70% { transform: scale(1.06); opacity: 0; }
+      100% { transform: scale(1.06); opacity: 0; }
+    }
+    .pulse-ring::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 1.75rem;
+      border: 3px solid currentColor;
+      animation: pulseRing 2s infinite;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col items-center">
+
+  <!-- Main Mobile Container -->
+  <div class="w-full max-w-md min-h-screen bg-slate-50 shadow-xl flex flex-col justify-between relative overflow-x-hidden">
+
+    <!-- Top Header & Live UAE Clock -->
+    <header class="bg-slate-900 text-white pt-5 pb-6 px-5 rounded-b-3xl shadow-md">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">UAE Time (Asia/Dubai)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="installBtn" class="hidden text-xs bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-1.5 rounded-full transition active:scale-95">
+            + Install App
+          </button>
+          <button id="openToolsBtn" aria-label="Menu, Export, and Developer Info" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-1.5 rounded-full transition active:scale-95 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            Menu
+          </button>
+        </div>
+      </div>
+
+      <!-- Today's Date & Current Time -->
+      <div class="text-center mt-1">
+        <p id="liveDate" class="text-sm font-medium text-slate-300">Loading date...</p>
+        <div id="liveClock" class="text-4xl sm:text-5xl font-extrabold tracking-tight mt-1 tabular-nums text-white">
+          --:--:--
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1.5">Duty: Mon–Sat • 8:00 AM – 6:00 PM (OT after 6:00 PM)</p>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 px-4 pt-5 pb-8 space-y-5">
+
+      <!-- Toast Notification Banner -->
+      <div id="toastBox" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3 transition-all">
+        <span id="toastMessage">Action saved</span>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white text-xs font-bold px-2 py-1">✕</button>
+      </div>
+
+      <!-- Primary Single IN / OUT Action Card -->
+      <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 text-center">
+
+        <!-- Sunday WEEKLY OFF View -->
+        <div id="weeklyOffView" class="hidden py-6">
+          <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+            <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <span class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold tracking-wider uppercase mb-2">Sunday Holiday</span>
+          <h2 class="text-3xl font-black text-slate-800 tracking-tight">WEEKLY OFF</h2>
+          <p class="text-sm text-slate-500 mt-1.5">Enjoy your rest day. Attendance resumes Monday at 8:00 AM.</p>
+        </div>
+
+        <!-- Working Day (Mon-Sat) Single IN/OUT Button View -->
+        <div id="workDayView">
+          <!-- Active Working Status Pill -->
+          <div id="statusBadge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4">
+            <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+            <span id="statusText">Not Clocked In</span>
+          </div>
+
+          <!-- SINGLE LARGE IN / OUT BUTTON -->
+          <div class="relative flex justify-center">
+            <button
+              id="punchBtn"
+              type="button"
+              class="w-full h-32 rounded-3xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-lg shadow-emerald-600/25 transition-all duration-150 flex flex-col items-center justify-center cursor-pointer focus:outline-none"
+            >
+              <span id="punchBtnLabel" class="text-4xl font-black tracking-wider">IN</span>
+              <span id="punchBtnSub" class="text-xs font-medium text-emerald-100 mt-1">Tap to start duty</span>
+            </button>
+          </div>
+
+          <!-- Current IN Time & Live Running OT Indicator while working -->
+          <div id="activeSessionBar" class="hidden mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-sm">
+            <div class="text-left">
+              <span class="text-xs text-slate-400 block">Current IN Time</span>
+              <span id="currentInDisplay" class="font-bold text-slate-800 text-base">--:-- --</span>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block">Live Running OT</span>
+              <span id="liveOtDisplay" class="font-bold text-emerald-600 text-base">0h 0m</span>
+            </div>
+          </div>
+
+          <!-- Accidental Tap Undo Option (Visible for 15 seconds after a punch) -->
+          <div id="undoBar" class="hidden mt-3 pt-2.5 border-t border-dashed border-slate-200 flex items-center justify-between">
+            <span id="undoPrompt" class="text-xs text-slate-500">Recorded just now</span>
+            <button id="undoBtn" type="button" class="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl active:scale-95">
+              Undo Last Tap
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TODAY OT & MONTHLY OT Prominent Summary Cards -->
+      <section class="grid grid-cols-2 gap-3.5">
+        <!-- TODAY OT -->
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">TODAY OT</span>
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          </div>
+          <div class="mt-2">
+            <p id="todayOtText" class="text-2xl font-black text-slate-900 tracking-tight">0h 0m</p>
+            <p id="todayOtMinsSub" class="text-xs font-medium text-slate-500 mt-0.5">0 total mins</p>
+          </div>
+        </div>
+
+        <!-- MONTHLY OT -->
+        <div class="bg-slate-900 text-white rounded-3xl p-4 shadow-md flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">MONTHLY OT</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="mt-2">
+            <p id="monthlyOtText" class="text-2xl font-black text-emerald-400 tracking-tight">0h 0m</p>
+            <p id="monthlyOtMinsSub" class="text-xs font-medium text-slate-300 mt-0.5">0 total mins</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Monthly Filter & Daily OT Records -->
+      <section class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200/80">
+        <!-- Month Switcher Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+          <button id="prevMonthBtn" aria-label="Previous Month" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <div class="text-center">
+            <h3 id="selectedMonthLabel" class="text-base font-extrabold text-slate-800">Month Year</h3>
+            <p id="selectedMonthSummary" class="text-xs font-medium text-slate-500">0 days with OT</p>
+          </div>
+
+          <button id="nextMonthBtn" aria-label="Next Month" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Daily Records List -->
+        <div id="recordsList" class="space-y-2.5 max-h-80 overflow-y-auto pr-0.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+
+      <!-- Subtle Developer Credit Footer -->
+      <footer class="pt-1 pb-2 text-center">
+        <button id="openAboutFooterBtn" type="button" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white border border-slate-200/80 shadow-2xs text-xs text-slate-500 transition active:scale-95">
+          <img id="footerDevAvatar" src="1000044128.jpg" alt="Nipun" class="w-5 h-5 rounded-full object-cover object-top border border-slate-300" />
+          <span>Developed by <strong class="font-bold text-slate-800">Nipun</strong></span>
+          <span class="text-slate-300">•</span>
+          <span class="text-emerald-700 font-semibold underline underline-offset-2">Contact</span>
+        </button>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Menu Modal: Export, Backup & Developer Info -->
+  <div id="toolsModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
+    <div id="toolsModalContent" class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
+        <div>
+          <h3 class="text-lg font-extrabold text-slate-900">Menu &amp; Settings</h3>
+          <p id="modalMonthSubtitle" class="text-xs text-slate-500">Selected Month</p>
+        </div>
+        <button id="closeToolsBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      </div>
+
+      <!-- Export Section -->
+      <div class="space-y-2.5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Export Monthly Report</p>
+        <button id="exportPdfBtn" class="w-full py-3.5 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Download PDF Report
+        </button>
+
+        <button id="exportCsvBtn" class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Download CSV (Excel)
+        </button>
+      </div>
+
+      <!-- Backup & Restore Section -->
+      <div class="space-y-2.5 pt-2 border-t border-slate-100">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Phone Data Backup &amp; Restore</p>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button id="backupJsonBtn" class="py-3 px-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-[0.99]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Save Backup
+          </button>
+
+          <label class="py-3 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Restore File
+            <input id="restoreJsonInput" type="file" accept=".json,application/json" class="hidden" />
+          </label>
+        </div>
+        <p class="text-[11px] text-slate-400 text-center">All records are saved privately on your phone's local storage.</p>
+      </div>
+
+      <!-- About & Developer Card -->
+      <div id="aboutDeveloperSection" class="space-y-3 pt-3 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400">About &amp; Developer</p>
+          <button id="toggleEditContactBtn" type="button" class="text-xs font-bold text-blue-600 hover:text-blue-700 px-2.5 py-1 rounded-lg bg-blue-50 active:scale-95 transition">
+            Edit Info
+          </button>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center gap-3.5">
+            <img
+              id="modalDevAvatar"
+              src="1000044128.jpg"
+              alt="Nipun - Developer Portrait"
+              class="w-16 h-16 rounded-2xl object-cover object-top border-2 border-slate-900 shadow-sm shrink-0 bg-slate-200"
+            />
+            <div>
+              <span class="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-0.5">Developer</span>
+              <h4 class="text-base font-extrabold text-slate-900 leading-tight">Nipun</h4>
+              <p class="text-xs font-medium text-slate-600 mt-0.5">Personal Overtime Tracker</p>
+              <p class="text-[11px] text-slate-400">Version 1.2 • UAE Time Edition</p>
+            </div>
+          </div>
+
+          <!-- Display Contact Buttons -->
+          <div id="contactDisplayView" class="space-y-2 pt-1">
+            <div id="contactButtonsContainer" class="grid grid-cols-1 gap-2">
+              <!-- Populated dynamically with built-in WhatsApp, Call & Email -->
+            </div>
+          </div>
+
+          <!-- Editable Contact & Photo Form -->
+          <form id="contactEditForm" class="hidden space-y-2.5 pt-2 border-t border-slate-200">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Update Profile Photo (Optional)</label>
+              <input id="devPhotoInput" type="file" accept="image/*" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Phone / WhatsApp Number</label>
+              <input id="devPhoneInput" type="tel" placeholder="+971562284001" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-900" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Email Address</label>
+              <input id="devEmailInput" type="email" placeholder="nipunkitchentec@gmail.com" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-900" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Portfolio / Website Link (Optional)</label>
+              <input id="devLinkInput" type="url" placeholder="https://github.com/nipunkitchentec-gif" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-900" />
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button type="submit" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold active:scale-95 transition">
+                Save Changes
+              </button>
+              <button id="resetContactDefaultBtn" type="button" class="py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold active:scale-95 transition">
+                Reset Default
+              </button>
+              <button id="cancelEditContactBtn" type="button" class="py-2.5 px-3 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold active:scale-95 transition">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ==========================================
+      // 1. CONSTANTS & STORAGE KEYS
+      // ==========================================
+      const STORAGE_KEY = 'uae_personal_ot_tracker_v1';
+      const CONTACT_STORAGE_KEY = 'uae_personal_ot_dev_contact_v2';
+      const TIMEZONE = 'Asia/Dubai';
+      const OT_START_HOUR = 18; // 6:00 PM (18:00)
+      const OT_START_MINUTE = 0;
+
+      // Built-in default developer profile (Nipun)
+      const DEFAULT_DEV_CONTACT = {
+        name: 'Nipun',
+        phone: '+971562284001',
+        email: 'nipunkitchentec@gmail.com',
+        link: '',
+        photo: '1000044128.jpg'
+      };
+
+      // Default application state
+      let appState = {
+        activeSession: null, // { dateStr: 'YYYY-MM-DD', inTimestamp: number }
+        records: []          // Array of { id, dateStr, inTimestamp, outTimestamp, otMinutes }
+      };
+
+      // Developer contact state initialized with Nipun's permanent defaults
+      let devContact = { ...DEFAULT_DEV_CONTACT };
+
+      // Currently viewed month in YYYY-MM format
+      let selectedMonthStr = '';
+      let lastTapTimestamp = 0;
+      let lastActionBackup = null;
+      let undoTimer = null;
+      let deferredInstallPrompt = null;
+
+      // ==========================================
+      // 2. UAE TIMEZONE HELPERS (Asia/Dubai)
+      // ==========================================
+      function getUaeParts(dateObj = new Date()) {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: TIMEZONE,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          weekday: 'short'
+        });
+
+        const parts = formatter.formatToParts(dateObj);
+        const map = {};
+        for (const p of parts) {
+          map[p.type] = p.value;
+        }
+
+        const hour = map.hour === '24' ? 0 : parseInt(map.hour, 10);
+        const minute = parseInt(map.minute, 10);
+        const second = parseInt(map.second, 10);
+
+        return {
+          year: map.year,
+          month: map.month,
+          day: map.day,
+          dateStr: `${map.year}-${map.month}-${map.day}`,
+          monthStr: `${map.year}-${map.month}`,
+          weekday: map.weekday, // 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
+          isSunday: map.weekday === 'Sun',
+          hour,
+          minute,
+          second
+        };
+      }
+
+      function formatUaeTime(timestamp) {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: TIMEZONE,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }).format(new Date(timestamp));
+      }
+
+      function formatUaeClock(dateObj = new Date()) {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: TIMEZONE,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }).format(dateObj);
+      }
+
+      function formatUaeFullDate(dateObj = new Date()) {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: TIMEZONE,
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }).format(dateObj);
+      }
+
+      function formatShortDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: TIMEZONE,
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short'
+        }).format(dt);
+      }
+
+      function formatMonthTitle(monthStr) {
+        const [y, m] = monthStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, 15, 12, 0, 0));
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: TIMEZONE,
+          month: 'long',
+          year: 'numeric'
+        }).format(dt);
+      }
+
+      // ==========================================
+      // 3. OVERTIME CALCULATION ENGINE
+      // ==========================================
+      /**
+       * Calculates overtime in whole minutes according to strict rules:
+       * - Monday to Saturday only (Sunday = 0 OT)
+       * - Normal duty is 8:00 AM to 6:00 PM
+       * - Time before 8:00 AM is NOT counted as OT
+       * - OT starts strictly after 6:00 PM (18:00 UAE time)
+       * - If OUT is at or before 6:00 PM, OT = 0
+       */
+      function calculateOtMinutes(inTimestamp, outTimestamp) {
+        if (!inTimestamp || !outTimestamp || outTimestamp <= inTimestamp) {
+          return 0;
+        }
+
+        const inParts = getUaeParts(new Date(inTimestamp));
+        if (inParts.isSunday) {
+          return 0;
+        }
+
+        // Construct exact 6:00 PM (18:00:00) timestamp on the shift's UAE date
+        // UAE is always UTC+04:00 (no daylight saving)
+        const sixPmIso = `${inParts.dateStr}T${String(OT_START_HOUR).padStart(2, '0')}:${String(OT_START_MINUTE).padStart(2, '0')}:00+04:00`;
+        const sixPmTimestamp = new Date(sixPmIso).getTime();
+
+        // Effective OT start is the later of 6:00 PM or when the user punched IN
+        const effectiveOtStart = Math.max(inTimestamp, sixPmTimestamp);
+
+        if (outTimestamp <= effectiveOtStart) {
+          return 0;
+        }
+
+        const diffMs = outTimestamp - effectiveOtStart;
+        return Math.floor(diffMs / 60000);
+      }
+
+      function formatHoursMinutes(totalMinutes) {
+        const mins = Math.max(0, Math.floor(totalMinutes));
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return `${h}h ${m}m`;
+      }
+
+      // ==========================================
+      // 4. LOCAL STORAGE PERSISTENCE
+      // ==========================================
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.records)) {
+              appState.records = parsed.records;
+              appState.activeSession = parsed.activeSession || null;
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load attendance data:', err);
+        }
+
+        try {
+          const rawContact = localStorage.getItem(CONTACT_STORAGE_KEY);
+          if (rawContact) {
+            const parsedContact = JSON.parse(rawContact);
+            if (parsedContact && typeof parsedContact === 'object') {
+              devContact = {
+                name: DEFAULT_DEV_CONTACT.name,
+                phone: parsedContact.phone !== undefined ? parsedContact.phone : DEFAULT_DEV_CONTACT.phone,
+                email: parsedContact.email !== undefined ? parsedContact.email : DEFAULT_DEV_CONTACT.email,
+                link: parsedContact.link !== undefined ? parsedContact.link : DEFAULT_DEV_CONTACT.link,
+                photo: parsedContact.photo || DEFAULT_DEV_CONTACT.photo
+              };
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load contact info:', err);
+        }
+      }
+
+      function saveData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        } catch (err) {
+          showToast('Storage warning: Could not save locally.');
+        }
+      }
+
+      function saveContactData() {
+        try {
+          localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(devContact));
+        } catch (err) {
+          showToast('Could not save contact details.');
+        }
+      }
+
+      // ==========================================
+      // 5. SINGLE IN / OUT PUNCH LOGIC
+      // ==========================================
+      function handlePunchTap() {
+        const now = Date.now();
+
+        // Prevent accidental double-tap within 3 seconds
+        if (now - lastTapTimestamp < 3000) {
+          showToast('Please wait 3 seconds before tapping again.');
+          return;
+        }
+        lastTapTimestamp = now;
+
+        const uaeNow = getUaeParts(new Date(now));
+
+        // Block punches on Sunday
+        if (uaeNow.isSunday) {
+          showToast('Today is Sunday (WEEKLY OFF).');
+          return;
+        }
+
+        // Save backup state for 15-second Undo protection
+        lastActionBackup = JSON.parse(JSON.stringify(appState));
+
+        if (!appState.activeSession) {
+          // FIRST TAP -> RECORD IN
+          appState.activeSession = {
+            dateStr: uaeNow.dateStr,
+            inTimestamp: now
+          };
+          saveData();
+          triggerUndoBanner(`Clocked IN at ${formatUaeTime(now)}`);
+          showToast(`IN recorded at ${formatUaeTime(now)}`);
+        } else {
+          // SECOND TAP -> RECORD OUT & CALCULATE OT
+          const inTs = appState.activeSession.inTimestamp;
+          const dateStr = appState.activeSession.dateStr;
+          const otMinutes = calculateOtMinutes(inTs, now);
+
+          const newRecord = {
+            id: `${dateStr}_${inTs}`,
+            dateStr,
+            inTimestamp: inTs,
+            outTimestamp: now,
+            otMinutes
+          };
+
+          appState.records.unshift(newRecord);
+          appState.activeSession = null;
+          selectedMonthStr = dateStr.slice(0, 7);
+          saveData();
+
+          triggerUndoBanner(`Clocked OUT (${formatHoursMinutes(otMinutes)} OT)`);
+          showToast(`OUT recorded • OT: ${formatHoursMinutes(otMinutes)}`);
+        }
+
+        renderUI();
+      }
+
+      function triggerUndoBanner(label) {
+        const undoBar = document.getElementById('undoBar');
+        const undoPrompt = document.getElementById('undoPrompt');
+        undoPrompt.textContent = label;
+        undoBar.classList.remove('hidden');
+
+        if (undoTimer) clearTimeout(undoTimer);
+        undoTimer = setTimeout(() => {
+          undoBar.classList.add('hidden');
+          lastActionBackup = null;
+        }, 15000);
+      }
+
+      function undoLastPunch() {
+        if (!lastActionBackup) return;
+        appState = lastActionBackup;
+        lastActionBackup = null;
+        saveData();
+        document.getElementById('undoBar').classList.add('hidden');
+        if (undoTimer) clearTimeout(undoTimer);
+        showToast('Last punch undone.');
+        renderUI();
+      }
+
+      // ==========================================
+      // 6. UI RENDERING
+      // ==========================================
+      function renderClockAndSchedule() {
+        const now = new Date();
+        const uaeNow = getUaeParts(now);
+
+        document.getElementById('liveDate').textContent = formatUaeFullDate(now);
+        document.getElementById('liveClock').textContent = formatUaeClock(now);
+
+        const weeklyOffView = document.getElementById('weeklyOffView');
+        const workDayView = document.getElementById('workDayView');
+
+        if (uaeNow.isSunday && !appState.activeSession) {
+          weeklyOffView.classList.remove('hidden');
+          workDayView.classList.add('hidden');
+        } else {
+          weeklyOffView.classList.add('hidden');
+          workDayView.classList.remove('hidden');
+        }
+
+        // Update live running OT if currently clocked IN
+        if (appState.activeSession) {
+          const liveMins = calculateOtMinutes(appState.activeSession.inTimestamp, now.getTime());
+          document.getElementById('liveOtDisplay').textContent = formatHoursMinutes(liveMins);
+
+          // Also update TODAY OT card dynamically if session is from today
+          if (appState.activeSession.dateStr === uaeNow.dateStr) {
+            updateSummaryCards(uaeNow);
+          }
+        }
+      }
+
+      function updateSummaryCards(uaeNow) {
+        const nowTs = Date.now();
+
+        // 1. Calculate TODAY OT (completed today + live active session if today)
+        let todayMins = appState.records
+          .filter(r => r.dateStr === uaeNow.dateStr)
+          .reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+
+        if (appState.activeSession && appState.activeSession.dateStr === uaeNow.dateStr) {
+          todayMins += calculateOtMinutes(appState.activeSession.inTimestamp, nowTs);
+        }
+
+        document.getElementById('todayOtText').textContent = formatHoursMinutes(todayMins);
+        document.getElementById('todayOtMinsSub').textContent = `${todayMins} total mins`;
+
+        // 2. Calculate MONTHLY OT for selectedMonthStr
+        let monthMins = appState.records
+          .filter(r => r.dateStr.startsWith(selectedMonthStr))
+          .reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+
+        if (appState.activeSession && appState.activeSession.dateStr.startsWith(selectedMonthStr)) {
+          monthMins += calculateOtMinutes(appState.activeSession.inTimestamp, nowTs);
+        }
+
+        document.getElementById('monthlyOtText').textContent = formatHoursMinutes(monthMins);
+        document.getElementById('monthlyOtMinsSub').textContent = `${monthMins} total mins`;
+      }
+
+      function renderUI() {
+        const uaeNow = getUaeParts(new Date());
+        if (!selectedMonthStr) {
+          selectedMonthStr = uaeNow.monthStr;
+        }
+
+        // Update Single IN / OUT Button Appearance
+        const punchBtn = document.getElementById('punchBtn');
+        const punchBtnLabel = document.getElementById('punchBtnLabel');
+        const punchBtnSub = document.getElementById('punchBtnSub');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const activeSessionBar = document.getElementById('activeSessionBar');
+
+        if (appState.activeSession) {
+          // State: WORKING -> Show OUT Button
+          punchBtn.className = 'w-full h-32 rounded-3xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white shadow-lg shadow-rose-600/25 transition-all duration-150 flex flex-col items-center justify-center cursor-pointer focus:outline-none pulse-ring text-rose-500';
+          punchBtnLabel.className = 'text-4xl font-black tracking-wider text-white';
+          punchBtnLabel.textContent = 'OUT';
+          punchBtnSub.className = 'text-xs font-medium text-rose-100 mt-1';
+          punchBtnSub.textContent = 'Tap to finish duty & calculate OT';
+
+          statusBadge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold mb-4';
+          statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
+          statusText.textContent = 'Currently Working';
+
+          activeSessionBar.classList.remove('hidden');
+          document.getElementById('currentInDisplay').textContent = formatUaeTime(appState.activeSession.inTimestamp);
+        } else {
+          // State: OFF DUTY -> Show IN Button
+          punchBtn.className = 'w-full h-32 rounded-3xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-lg shadow-emerald-600/25 transition-all duration-150 flex flex-col items-center justify-center cursor-pointer focus:outline-none';
+          punchBtnLabel.className = 'text-4xl font-black tracking-wider text-white';
+          punchBtnLabel.textContent = 'IN';
+          punchBtnSub.className = 'text-xs font-medium text-emerald-100 mt-1';
+          punchBtnSub.textContent = 'Tap to record arrival time';
+
+          statusBadge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4';
+          statusDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+          statusText.textContent = 'Off Duty • Ready';
+
+          activeSessionBar.classList.add('hidden');
+        }
+
+        // Update Summary Cards
+        updateSummaryCards(uaeNow);
+
+        // Update Month Switcher & Daily Records List
+        const monthTitle = formatMonthTitle(selectedMonthStr);
+        document.getElementById('selectedMonthLabel').textContent = monthTitle;
+        document.getElementById('modalMonthSubtitle').textContent = monthTitle;
+
+        const monthRecords = appState.records
+          .filter(r => r.dateStr.startsWith(selectedMonthStr))
+          .sort((a, b) => b.inTimestamp - a.inTimestamp);
+
+        const otDaysCount = monthRecords.filter(r => r.otMinutes > 0).length;
+        document.getElementById('selectedMonthSummary').textContent =
+          `${monthRecords.length} shift${monthRecords.length === 1 ? '' : 's'} • ${otDaysCount} with OT`;
+
+        const recordsList = document.getElementById('recordsList');
+        if (monthRecords.length === 0) {
+          recordsList.innerHTML = `
+            <div class="text-center py-8 px-4">
+              <p class="text-sm font-semibold text-slate-500">No attendance records for ${monthTitle}</p>
+              <p class="text-xs text-slate-400 mt-1">Tap the IN button when you start work to begin tracking.</p>
+            </div>
+          `;
+        } else {
+          recordsList.innerHTML = monthRecords.map(rec => {
+            const hasOt = rec.otMinutes > 0;
+            const otBadgeClass = hasOt
+              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              : 'bg-slate-100 text-slate-500';
+            return `
+              <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div>
+                  <p class="text-sm font-bold text-slate-800">${formatShortDate(rec.dateStr)}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    IN: <span class="font-semibold text-slate-700">${formatUaeTime(rec.inTimestamp)}</span>
+                    <span class="mx-1 text-slate-300">•</span>
+                    OUT: <span class="font-semibold text-slate-700">${formatUaeTime(rec.outTimestamp)}</span>
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span class="inline-block px-2.5 py-1 rounded-xl text-xs font-extrabold ${otBadgeClass}">
+                    ${hasOt ? '+' + formatHoursMinutes(rec.otMinutes) : '0h 0m'}
+                  </span>
+                  <span class="block text-[10px] text-slate-400 mt-0.5">${rec.otMinutes} mins</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        renderClockAndSchedule();
+        renderDeveloperContact();
+      }
+
+      // ==========================================
+      // 7. DEVELOPER & CONTACT SECTION RENDERING
+      // ==========================================
+      function applyDeveloperAvatar(imgEl, photoSrc) {
+        if (!imgEl) return;
+        imgEl.onerror = function () {
+          // Graceful SVG portrait fallback if external file is missing
+          this.onerror = null;
+          this.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#0f172a"/><text x="60" y="74" font-family="Arial,sans-serif" font-size="52" font-weight="bold" fill="#34d399" text-anchor="middle">N</text></svg>'
+          );
+        };
+        imgEl.src = photoSrc || DEFAULT_DEV_CONTACT.photo;
+      }
+
+      function renderDeveloperContact() {
+        applyDeveloperAvatar(document.getElementById('footerDevAvatar'), devContact.photo);
+        applyDeveloperAvatar(document.getElementById('modalDevAvatar'), devContact.photo);
+
+        const container = document.getElementById('contactButtonsContainer');
+        const phoneVal = (devContact.phone || '').trim();
+        const emailVal = (devContact.email || '').trim();
+        const linkVal = (devContact.link || '').trim();
+
+        let html = '';
+
+        if (phoneVal) {
+          const cleanDigits = phoneVal.replace(/[^0-9]/g, '');
+          const telHref = `tel:${phoneVal.replace(/[^0-9+]/g, '')}`;
+          const waHref = `https://wa.me/${cleanDigits}`;
+
+          html += `
+            <div class="grid grid-cols-2 gap-2">
+              <a href="${waHref}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                WhatsApp
+              </a>
+              <a href="${telHref}" class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-95">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Call ${phoneVal}
+              </a>
+            </div>
+          `;
+        }
+
+        if (emailVal) {
+          html += `
+            <a href="mailto:${encodeURIComponent(emailVal)}?subject=${encodeURIComponent('Personal Overtime Tracker App')}" class="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span class="truncate">${emailVal}</span>
+            </a>
+          `;
+        }
+
+        if (linkVal) {
+          const safeUrl = linkVal.startsWith('http') ? linkVal : `https://${linkVal}`;
+          html += `
+            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-blue-600 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Visit Developer Link
+            </a>
+          `;
+        }
+
+        container.innerHTML = html;
+      }
+
+      // ==========================================
+      // 8. MONTH NAVIGATION
+      // ==========================================
+      function changeMonth(delta) {
+        const [y, m] = selectedMonthStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1 + delta, 15));
+        const newY = dt.getUTCFullYear();
+        const newM = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        selectedMonthStr = `${newY}-${newM}`;
+        renderUI();
+      }
+
+      // ==========================================
+      // 9. EXPORT (PDF & CSV) & BACKUP / RESTORE
+      // ==========================================
+      function getSelectedMonthRecordsAsc() {
+        return appState.records
+          .filter(r => r.dateStr.startsWith(selectedMonthStr))
+          .sort((a, b) => a.inTimestamp - b.inTimestamp);
+      }
+
+      function exportMonthlyPdf() {
+        const records = getSelectedMonthRecordsAsc();
+        if (records.length === 0) {
+          showToast('No records in this month to export.');
+          return;
+        }
+
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          const monthTitle = formatMonthTitle(selectedMonthStr);
+
+          doc.setFontSize(18);
+          doc.setTextColor(15, 23, 42);
+          doc.text('Monthly Overtime Report', 14, 20);
+
+          doc.setFontSize(11);
+          doc.setTextColor(100, 116, 139);
+          doc.text(`Period: ${monthTitle}  |  Schedule: Mon-Sat (8:00 AM - 6:00 PM)  |  UAE Time`, 14, 28);
+
+          const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+          const rows = records.map(r => [
+            `${r.dateStr} (${formatShortDate(r.dateStr).split(',')[0]})`,
+            formatUaeTime(r.inTimestamp),
+            formatUaeTime(r.outTimestamp),
+            formatHoursMinutes(r.otMinutes),
+            `${r.otMinutes} mins`
+          ]);
+
+          doc.autoTable({
+            startY: 35,
+            head: [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'OT Minutes']],
+            body: rows,
+            theme: 'grid',
+            headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 10, cellPadding: 3.5 },
+            foot: [[
+              'MONTHLY OT TOTAL',
+              '',
+              '',
+              formatHoursMinutes(totalMins),
+              `${totalMins} mins`
+            ]],
+            footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' }
+          });
+
+          const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 280;
+          doc.setFontSize(9);
+          doc.setTextColor(148, 163, 184);
+          doc.text('Developed by Nipun • Personal Overtime Tracker', 14, Math.min(finalY, 287));
+
+          doc.save(`Overtime_Report_${selectedMonthStr}.pdf`);
+          showToast('PDF Report downloaded!');
+        } catch (err) {
+          console.error(err);
+          showToast('Error generating PDF. Try CSV export.');
+        }
+      }
+
+      function exportMonthlyCsv() {
+        const records = getSelectedMonthRecordsAsc();
+        if (records.length === 0) {
+          showToast('No records in this month to export.');
+          return;
+        }
+
+        const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+        const lines = [
+          ['Date', 'IN Time (UAE)', 'OUT Time (UAE)', 'Daily OT (Hours & Mins)', 'Daily OT (Total Minutes)'].join(',')
+        ];
+
+        for (const r of records) {
+          lines.push([
+            r.dateStr,
+            `"${formatUaeTime(r.inTimestamp)}"`,
+            `"${formatUaeTime(r.outTimestamp)}"`,
+            `"${formatHoursMinutes(r.otMinutes)}"`,
+            r.otMinutes
+          ].join(','));
+        }
+
+        lines.push(['MONTHLY TOTAL', '', '', `"${formatHoursMinutes(totalMins)}"`, totalMins].join(','));
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        triggerDownload(blob, `Overtime_Records_${selectedMonthStr}.csv`);
+        showToast('CSV file downloaded!');
+      }
+
+      function backupJsonData() {
+        const payload = {
+          app: 'Personal Overtime Tracker',
+          developer: 'Nipun',
+          exportedAt: new Date().toISOString(),
+          data: appState,
+          contact: devContact
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const todayStr = getUaeParts(new Date()).dateStr;
+        triggerDownload(blob, `OT_Backup_${todayStr}.json`);
+        showToast('Backup file saved to Downloads!');
+      }
+
+      function restoreJsonData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const parsed = JSON.parse(e.target.result);
+            const restored = parsed.data ? parsed.data : parsed;
+            if (!restored || !Array.isArray(restored.records)) {
+              throw new Error('Invalid backup structure');
+            }
+            appState.records = restored.records;
+            appState.activeSession = restored.activeSession || null;
+            if (parsed.contact && typeof parsed.contact === 'object') {
+              devContact = {
+                phone: parsed.contact.phone || '',
+                email: parsed.contact.email || '',
+                link: parsed.contact.link || ''
+              };
+              saveContactData();
+            }
+            saveData();
+            renderUI();
+            closeModal();
+            showToast(`Restored ${appState.records.length} records successfully!`);
+          } catch (err) {
+            showToast('Invalid backup file selected.');
+          } finally {
+            event.target.value = '';
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      // ==========================================
+      // 10. TOAST & MODAL HELPERS
+      // ==========================================
+      let toastTimeout = null;
+      function showToast(msg) {
+        const box = document.getElementById('toastBox');
+        document.getElementById('toastMessage').textContent = msg;
+        box.classList.remove('hidden');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(hideToast, 3500);
+      }
+
+      window.hideToast = function () {
+        document.getElementById('toastBox').classList.add('hidden');
+      };
+
+      function openModal(scrollToAbout = false) {
+        document.getElementById('toolsModal').classList.remove('hidden');
+        if (scrollToAbout) {
+          setTimeout(() => {
+            const aboutEl = document.getElementById('aboutDeveloperSection');
+            if (aboutEl) {
+              aboutEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 80);
+        }
+      }
+
+      function closeModal() {
+        document.getElementById('toolsModal').classList.add('hidden');
+        document.getElementById('contactEditForm').classList.add('hidden');
+        document.getElementById('contactDisplayView').classList.remove('hidden');
+      }
+
+      // ==========================================
+      // 11. PWA SETUP (MANIFEST & SERVICE WORKER)
+      // ==========================================
+      function setupPwa() {
+        // Generate dynamic SVG app icon
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0f172a"/><circle cx="256" cy="256" r="160" fill="none" stroke="#10b981" stroke-width="32"/><path d="M256 160v104l72 44" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+
+        const manifest = {
+          name: 'Personal Overtime Tracker',
+          short_name: 'OT Tracker',
+          description: 'Simple personal single-button overtime tracker for UAE schedule.',
+          start_url: '.',
+          display: 'standalone',
+          background_color: '#0f172a',
+          theme_color: '#0f172a',
+          icons: [
+            { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+            { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = URL.createObjectURL(manifestBlob);
+        document.head.appendChild(manifestLink);
+
+        // Register lightweight offline Service Worker when hosted over HTTPS
+        if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+          const swCode = `
+            const CACHE_NAME = 'ot-tracker-cache-v2';
+            self.addEventListener('install', (e) => {
+              self.skipWaiting();
+            });
+            self.addEventListener('activate', (e) => {
+              e.waitUntil(clients.claim());
+            });
+            self.addEventListener('fetch', (e) => {
+              e.respondWith(
+                fetch(e.request).catch(() => caches.match(e.request))
+              );
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        }
+
+        // Capture Android Chrome Install Prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredInstallPrompt = e;
+          document.getElementById('installBtn').classList.remove('hidden');
+        });
+      }
+
+      // ==========================================
+      // 12. EVENT LISTENERS & INITIALIZATION
+      // ==========================================
+      document.getElementById('punchBtn').addEventListener('click', handlePunchTap);
+      document.getElementById('undoBtn').addEventListener('click', undoLastPunch);
+      document.getElementById('prevMonthBtn').addEventListener('click', () => changeMonth(-1));
+      document.getElementById('nextMonthBtn').addEventListener('click', () => changeMonth(1));
+
+      document.getElementById('openToolsBtn').addEventListener('click', () => openModal(false));
+      document.getElementById('openAboutFooterBtn').addEventListener('click', () => openModal(true));
+      document.getElementById('closeToolsBtn').addEventListener('click', closeModal);
+      document.getElementById('toolsModal').addEventListener('click', (e) => {
+        if (e.target.id === 'toolsModal') closeModal();
+      });
+
+      document.getElementById('exportPdfBtn').addEventListener('click', exportMonthlyPdf);
+      document.getElementById('exportCsvBtn').addEventListener('click', exportMonthlyCsv);
+      document.getElementById('backupJsonBtn').addEventListener('click', backupJsonData);
+      document.getElementById('restoreJsonInput').addEventListener('change', restoreJsonData);
+
+      // Developer Contact Edit Form Handlers
+      document.getElementById('toggleEditContactBtn').addEventListener('click', () => {
+        const form = document.getElementById('contactEditForm');
+        const display = document.getElementById('contactDisplayView');
+        const isHidden = form.classList.contains('hidden');
+
+        if (isHidden) {
+          document.getElementById('devPhoneInput').value = devContact.phone || '';
+          document.getElementById('devEmailInput').value = devContact.email || '';
+          document.getElementById('devLinkInput').value = devContact.link || '';
+          document.getElementById('devPhotoInput').value = '';
+          form.classList.remove('hidden');
+          display.classList.add('hidden');
+        } else {
+          form.classList.add('hidden');
+          display.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('cancelEditContactBtn').addEventListener('click', () => {
+        document.getElementById('contactEditForm').classList.add('hidden');
+        document.getElementById('contactDisplayView').classList.remove('hidden');
+      });
+
+      document.getElementById('resetContactDefaultBtn').addEventListener('click', () => {
+        devContact = { ...DEFAULT_DEV_CONTACT };
+        saveContactData();
+        renderDeveloperContact();
+        document.getElementById('contactEditForm').classList.add('hidden');
+        document.getElementById('contactDisplayView').classList.remove('hidden');
+        showToast('Reset to Nipun default contact & photo!');
+      });
+
+      document.getElementById('contactEditForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        devContact.phone = document.getElementById('devPhoneInput').value.trim();
+        devContact.email = document.getElementById('devEmailInput').value.trim();
+        devContact.link = document.getElementById('devLinkInput').value.trim();
+
+        const photoFile = document.getElementById('devPhotoInput').files[0];
+        if (photoFile) {
+          const reader = new FileReader();
+          reader.onload = function (ev) {
+            // Resize portrait via canvas so it stays lightweight in localStorage
+            const img = new Image();
+            img.onload = function () {
+              const canvas = document.createElement('canvas');
+              const maxDim = 256;
+              let w = img.width;
+              let h = img.height;
+              if (w > h) {
+                if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+              } else {
+                if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              devContact.photo = canvas.toDataURL('image/jpeg', 0.85);
+              saveContactData();
+              renderDeveloperContact();
+              document.getElementById('contactEditForm').classList.add('hidden');
+              document.getElementById('contactDisplayView').classList.remove('hidden');
+              showToast('Developer photo & contact info saved!');
+            };
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(photoFile);
+        } else {
+          saveContactData();
+          renderDeveloperContact();
+          document.getElementById('contactEditForm').classList.add('hidden');
+          document.getElementById('contactDisplayView').classList.remove('hidden');
+          showToast('Developer contact info saved!');
+        }
+      });
+
+      document.getElementById('installBtn').addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+          document.getElementById('installBtn').classList.add('hidden');
+        }
+        deferredInstallPrompt = null;
+      });
+
+      // Boot App
+      loadData();
+      setupPwa();
+      renderUI();
+      setInterval(renderClockAndSchedule, 1000);
+    })();
+  </script>
+</body>
+</html>
