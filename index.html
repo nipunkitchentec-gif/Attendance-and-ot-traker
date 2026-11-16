@@ -1080,10 +1080,26 @@
       // ==========================================
       // 11. PWA SETUP (MANIFEST & SERVICE WORKER)
       // ==========================================
-      function setupPwa() {
-        // Generate dynamic SVG app icon
-        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0f172a"/><circle cx="256" cy="256" r="160" fill="none" stroke="#10b981" stroke-width="32"/><path d="M256 160v104l72 44" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-        const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+      
+function setupPwa() {
+
+    // Register the static Service Worker
+    if ('serviceWorker' in navigator &&
+        (location.protocol === 'https:' || location.hostname === 'localhost')) {
+
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+            .then((registration) => registration.update().catch(() => {}))
+            .catch((error) => console.warn('Service worker registration failed:', error));
+    }
+
+    // Capture Android Chrome Install Prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        document.getElementById('installBtn').classList.remove('hidden');
+    });
+
+}
 
         const manifest = {
           name: 'Personal Overtime Tracker',
