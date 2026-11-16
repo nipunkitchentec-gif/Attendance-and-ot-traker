@@ -1118,6 +1118,96 @@ function setupPwa() {
       document.getElementById('prevMonthBtn').addEventListener('click', () => changeMonth(-1));
       document.getElementById('nextMonthBtn').addEventListener('click', () => changeMonth(1));
 
+      // Edit / Delete saved attendance records
+      document.getElementById('recordsList').addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-record-action]');
+        if (!button) return;
+
+        const recordId = button.dataset.recordId;
+        const record = appState.records.find(item => String(item.id) === recordId);
+
+        if (!record) {
+          showToast('Record not found.');
+          return;
+        }
+
+        // DELETE RECORD
+        if (button.dataset.recordAction === 'delete') {
+          if (!confirm(`Delete the record for ${record.dateStr}? This cannot be undone.`)) return;
+
+          appState.records = appState.records.filter(item => String(item.id) !== recordId);
+          saveData();
+          renderUI();
+          showToast('Record deleted.');
+          return;
+        }
+
+        // EDIT RECORD
+        if (button.dataset.recordAction === 'edit') {
+          const newDate = prompt('Edit date (YYYY-MM-DD):', record.dateStr);
+          if (newDate === null) return;
+
+          const getTime = timestamp => {
+            return new Intl.DateTimeFormat('en-GB', {
+              timeZone: TIMEZONE,
+              hour: '2-digit',
+              minute: '2-digit',
+              hourCycle: 'h23'
+            }).format(new Date(timestamp));
+          };
+
+          const newInTime = prompt('Edit IN time (HH:MM):', getTime(record.inTimestamp));
+          if (newInTime === null) return;
+
+          const newOutTime = prompt('Edit OUT time (HH:MM):', getTime(record.outTimestamp));
+          if (newOutTime === null) return;
+
+          // Validate date
+          const dateParts = newDate.split('-').map(Number);
+          const dateCheck = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
+          const validDate =
+            /^\d{4}-\d{2}-\d{2}$/.test(newDate) &&
+            dateCheck.toISOString().slice(0, 10) === newDate;
+
+          // Validate time
+          const validTime = value =>
+            /^\d{2}:\d{2}$/.test(value) &&
+            Number(value.slice(0, 2)) <= 23 &&
+            Number(value.slice(3, 5)) <= 59;
+
+          if (!validDate || !validTime(newInTime) || !validTime(newOutTime)) {
+            showToast('Invalid date or time. Use YYYY-MM-DD and HH:MM.');
+            return;
+          }
+
+          const inTimestamp = Date.parse(newDate + 'T' + newInTime + ':00+04:00');
+          const outTimestamp = Date.parse(newDate + 'T' + newOutTime + ':00+04:00');
+
+ if (!Number.isFinite(inTimestamp) || !Number.isFinite(outTimestamp) || outTimestamp <= inTimestamp) {
+            showToast('OUT time must be later than IN time.');
+            return;
+          }
+
+          const newId = `${newDate}_${inTimestamp}`;
+
+          if (appState.records.some(item => item !== record && String(item.id) === newId)) {
+            showToast('Another record already exists at this date and time.');
+            return;
+          }
+
+          record.dateStr = newDate;
+          record.inTimestamp = inTimestamp;
+          record.outTimestamp = outTimestamp;
+          record.otMinutes = calculateOtMinutes(inTimestamp, outTimestamp);
+          record.id = newId;
+
+          selectedMonthStr = newDate.slice(0, 7);
+          saveData();
+          renderUI();
+          showToast('Record updated and OT recalculated.');
+        }
+      });
+
       document.getElementById('openToolsBtn').addEventListener('click', () => openModal(false));
       document.getElementById('openAboutFooterBtn').addEventListener('click', () => openModal(true));
       document.getElementById('closeToolsBtn').addEventListener('click', closeModal);
