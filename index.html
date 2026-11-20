@@ -153,10 +153,19 @@
       <p class="login-subtitle">Attendance &amp; Overtime Tracker</p>
 
       <div class="input-group">
-        <input type="password" id="appPassword" placeholder="Enter Password" onkeyup="handleEnterPassword(event)" />
+        <input
+          type="password"
+          id="appPassword"
+          placeholder="Enter Password"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          onkeydown="handleEnterPassword(event)"
+        />
       </div>
 
-      <button onclick="checkAppPassword()" class="login-btn">Unlock App</button>
+      <button type="button" onclick="checkAppPassword()" class="login-btn">Unlock App</button>
       <p id="errorMsg" class="error-text"></p>
 
       <div id="securityWarningBox" class="hidden mt-3 p-3.5 rounded-2xl bg-red-600 text-white text-left text-xs shadow-lg border-2 border-red-800 space-y-1.5">
@@ -442,10 +451,13 @@
 
     function syncLockState() {
       const isUnlocked = localStorage.getItem('sk_app_unlocked') === 'true';
+      const overlay = document.getElementById('loginOverlay');
       if (!isUnlocked || isSessionExpired()) {
-        lockApp(true);
+        if (overlay.style.display !== 'flex') {
+          lockApp(isUnlocked && isSessionExpired());
+        }
       } else {
-        document.getElementById('loginOverlay').style.display = 'none';
+        overlay.style.display = 'none';
       }
     }
 
@@ -462,12 +474,14 @@
 
     function handleEnterPassword(event) {
       if (event.key === 'Enter') {
+        event.preventDefault();
         checkAppPassword();
       }
     }
 
     async function checkAppPassword() {
-      const entered = document.getElementById('appPassword').value.trim();
+      const inputEl = document.getElementById('appPassword');
+      const entered = inputEl.value.trim();
       const err = document.getElementById('errorMsg');
       const warnBox = document.getElementById('securityWarningBox');
       const metaText = document.getElementById('deviceMetaText');
@@ -478,11 +492,12 @@
         localStorage.setItem('sk_app_unlocked', 'true');
         localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
         document.getElementById('loginOverlay').style.display = 'none';
+        inputEl.value = "";
         err.innerText = "";
         if (warnBox) warnBox.classList.add('hidden');
       } else {
         err.innerText = "Access Denied! Invalid Password.";
-        document.getElementById('appPassword').value = "";
+        inputEl.value = "";
 
         if (warnBox) {
           warnBox.classList.remove('hidden');
@@ -499,7 +514,8 @@
     function lockApp(expired = false) {
       localStorage.removeItem('sk_app_unlocked');
       localStorage.removeItem(UNLOCKED_AT_KEY);
-      document.getElementById('appPassword').value = "";
+      const inputEl = document.getElementById('appPassword');
+      if (inputEl) inputEl.value = "";
       document.getElementById('errorMsg').innerText = expired ? "Session expired after 18 hours. Please unlock again." : "";
       const warnBox = document.getElementById('securityWarningBox');
       if (warnBox) warnBox.classList.add('hidden');
@@ -664,7 +680,6 @@
       }
 
       function renderClockAndSchedule() {
-        syncLockState();
         const now = new Date();
         const uaeNow = getUaeParts(now);
 
@@ -894,130 +909,4 @@
       }
 
       function exportMonthlyPdf() {
-        const records = getSelectedMonthRecordsAsc();
-        if (records.length === 0) {
-          showToast('No records in this month to export.');
-          return;
-        }
-        try {
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF();
-          const monthTitle = formatMonthTitle(selectedMonthStr);
-          doc.setFontSize(18);
-          doc.text('Smart Kitchens FZE - Overtime Report', 14, 20);
-          doc.setFontSize(11);
-          doc.text(`Period: ${monthTitle}  |  UAE Time`, 14, 28);
-
-          const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
-          const rows = records.map(r => [r.dateStr, formatUaeTime(r.inTimestamp), formatUaeTime(r.outTimestamp), formatHoursMinutes(r.otMinutes), `${r.otMinutes} mins`]);
-
-          doc.autoTable({
-            startY: 35,
-            head: [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'OT Minutes']],
-            body: rows,
-            theme: 'grid',
-            foot: [['MONTHLY OT TOTAL', '', '', formatHoursMinutes(totalMins), `${totalMins} mins`]]
-          });
-
-          doc.save(`SmartKitchens_OT_${selectedMonthStr}.pdf`);
-          showToast('PDF Report downloaded!');
-        } catch (err) {
-          showToast('Error generating PDF.');
-        }
-      }
-
-      function exportMonthlyCsv() {
-        const records = getSelectedMonthRecordsAsc();
-        if (records.length === 0) {
-          showToast('No records to export.');
-          return;
-        }
-        const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
-        const lines = [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'Total Mins'].join(',')];
-        for (const r of records) {
-          lines.push([r.dateStr, `"${formatUaeTime(r.inTimestamp)}"`, `"${formatUaeTime(r.outTimestamp)}"`, `"${formatHoursMinutes(r.otMinutes)}"`, r.otMinutes].join(','));
-        }
-        lines.push(['MONTHLY TOTAL', '', '', `"${formatHoursMinutes(totalMins)}"`, totalMins].join(','));
-        triggerDownload(new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' }), `SmartKitchens_OT_${selectedMonthStr}.csv`);
-        showToast('CSV downloaded!');
-      }
-
-      function backupJsonData() {
-        const blob = new Blob([JSON.stringify({ app: 'Smart Kitchens FZE OT Tracker', data: appState }, null, 2)], { type: 'application/json' });
-        triggerDownload(blob, `SmartKitchens_Backup.json`);
-        showToast('Backup saved!');
-      }
-
-      function restoreJsonData(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (ev) {
-          try {
-            const parsed = JSON.parse(ev.target.result);
-            const restored = parsed.data ? parsed.data : parsed;
-            appState.records = restored.records || [];
-            appState.activeSession = restored.activeSession || null;
-            saveData();
-            renderUI();
-            showToast('Restored successfully!');
-          } catch (err) {
-            showToast('Invalid backup file.');
-          } finally {
-            e.target.value = '';
-          }
-        };
-        reader.readAsText(file);
-      }
-
-      function triggerDownload(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
-
-      function showToast(msg) {
-        const box = document.getElementById('toastBox');
-        document.getElementById('toastMessage').textContent = msg;
-        box.classList.remove('hidden');
-        setTimeout(() => box.classList.add('hidden'), 3500);
-      }
-
-      window.hideToast = () => document.getElementById('toastBox').classList.add('hidden');
-
-      document.getElementById('punchBtn').addEventListener('click', handlePunchTap);
-      document.getElementById('undoBtn').addEventListener('click', undoLastPunch);
-      document.getElementById('lockAppBtn').addEventListener('click', () => lockApp(false));
-      document.getElementById('prevMonthBtn').addEventListener('click', () => {
-        const [y, m] = selectedMonthStr.split('-').map(Number);
-        const dt = new Date(Date.UTC(y, m - 2, 15));
-        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
-        renderUI();
-      });
-      document.getElementById('nextMonthBtn').addEventListener('click', () => {
-        const [y, m] = selectedMonthStr.split('-').map(Number);
-        const dt = new Date(Date.UTC(y, m, 15));
-        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
-        renderUI();
-      });
-
-      document.getElementById('openToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
-      document.getElementById('openAboutFooterBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
-      document.getElementById('closeToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.add('hidden'));
-      document.getElementById('exportPdfBtn').addEventListener('click', exportMonthlyPdf);
-      document.getElementById('exportCsvBtn').addEventListener('click', exportMonthlyCsv);
-      document.getElementById('backupJsonBtn').addEventListener('click', backupJsonData);
-      document.getElementById('restoreJsonInput').addEventListener('change', restoreJsonData);
-
-      loadData();
-      renderUI();
-      setInterval(renderClockAndSchedule, 1000);
-    })();
-  </script>
-</body>
-</html>
+        
