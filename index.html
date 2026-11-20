@@ -53,7 +53,6 @@
       overflow: hidden;
     }
 
-    /* Welcome Splash Overlay after Login */
     #welcomeSplashOverlay {
       position: fixed;
       inset: 0;
@@ -410,7 +409,6 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col items-center">
 
-  <!-- Welcome Animation Screen with Logged-in User Name -->
   <div id="welcomeSplashOverlay" role="dialog" aria-label="Welcome Message">
     <div class="welcome-banner-card">
       <div id="welcomeUserLabel" class="welcome-user-pill">NIPUN</div>
@@ -729,7 +727,26 @@
         <button id="closeToolsBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
       </div>
 
-      <div class="space-y-2.5">
+      <!-- 8:00 AM Shift Reminder Settings -->
+      <div class="space-y-2.5 pt-1">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">8:00 AM Shift Reminder</p>
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-slate-700">Notification Status</span>
+            <span id="notifStatusBadge" class="px-2.5 py-0.5 rounded-full font-bold bg-slate-200 text-slate-700">Checking...</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="enableNotifBtn" class="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition active:scale-[0.99]">
+              Allow Reminders
+            </button>
+            <button type="button" id="testNotifBtn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition active:scale-[0.99]">
+              Test 8AM Alert
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2.5 pt-2 border-t border-slate-100">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Export Monthly Report</p>
         <button id="exportPdfBtn" class="w-full py-3.5 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition">
           Download PDF Report
@@ -739,7 +756,6 @@
         </button>
       </div>
 
-      <!-- Add / Manage User Names & Passwords -->
       <div class="space-y-2.5 pt-2 border-t border-slate-100">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Team Names &amp; Passwords</p>
         <form id="addTeamAccountForm" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
@@ -806,14 +822,85 @@
     const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
     const UNLOCKED_USER_KEY = 'sk_app_unlocked_user';
     const CUSTOM_ACCOUNTS_KEY = 'sk_custom_team_accounts_v1';
+    const SHIFT_REMINDER_LAST_DATE_KEY = 'sk_shift_reminder_sent_date_v1';
 
-    // Default built-in passwords & names (you can also add more here or via Menu)
+    const SHIFT_REMINDER_TITLE = 'Shift Reminder!';
+    const SHIFT_REMINDER_BODY =
+      "Your Shift Is About to Begin!\n" +
+      "Don't forget to keep track of your working hours and calculate your overtime. Every extra hour counts!\n" +
+      "Stay on time. Track your hours. Know your overtime!";
+
     const DEFAULT_USER_ACCOUNTS = {
       'SKFZE2026': 'Nipun'
     };
 
     let welcomeHoldTimer = null;
     let welcomeHideTimer = null;
+
+    function updateNotificationStatusBadge() {
+      const badge = document.getElementById('notifStatusBadge');
+      if (!badge) return;
+
+      if (!('Notification' in window)) {
+        badge.textContent = 'Not Supported';
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700';
+        return;
+      }
+
+      if (Notification.permission === 'granted') {
+        badge.textContent = 'Enabled (8:00 AM)';
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800';
+      } else if (Notification.permission === 'denied') {
+        badge.textContent = 'Blocked in Browser';
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700';
+      } else {
+        badge.textContent = 'Tap Allow';
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800';
+      }
+    }
+
+    async function requestShiftNotificationPermission() {
+      if (!('Notification' in window)) {
+        alert('This browser does not support system notifications.');
+        return;
+      }
+      try {
+        const perm = await Notification.requestPermission();
+        updateNotificationStatusBadge();
+        if (perm === 'granted') {
+          alert('8:00 AM Shift Reminders enabled!');
+        } else {
+          alert('Notification permission was not granted.');
+        }
+      } catch (e) {
+        alert('Could not request notification permission.');
+      }
+    }
+
+    function triggerShiftReminderNotification(isTest = false) {
+      const toastBox = document.getElementById('toastBox');
+      const toastMsg = document.getElementById('toastMessage');
+      if (toastBox && toastMsg) {
+        toastMsg.textContent = `${SHIFT_REMINDER_TITLE} Your Shift Is About to Begin!`;
+        toastBox.classList.remove('hidden');
+        setTimeout(() => toastBox.classList.add('hidden'), 5000);
+      }
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          const n = new Notification(SHIFT_REMINDER_TITLE, {
+            body: SHIFT_REMINDER_BODY,
+            icon: 'logo.png',
+            tag: isTest ? `sk-shift-test-${Date.now()}` : 'sk-shift-8am-reminder',
+            renotify: true
+          });
+          n.onclick = function () {
+            window.focus();
+            this.close();
+          };
+        } catch (e) {}
+      }
+    }
 
     function getAllUserAccounts() {
       const merged = { ...DEFAULT_USER_ACCOUNTS };
@@ -1032,12 +1119,15 @@
     window.addEventListener('DOMContentLoaded', () => {
       syncLockState();
       renderTeamAccountsList();
+      updateNotificationStatusBadge();
 
       const unlockBtn = document.getElementById('unlockAppBtn');
       const passInput = document.getElementById('appPassword');
       const splash = document.getElementById('welcomeSplashOverlay');
       const addAccountForm = document.getElementById('addTeamAccountForm');
       const accountsListEl = document.getElementById('teamAccountsList');
+      const enableNotifBtn = document.getElementById('enableNotifBtn');
+      const testNotifBtn = document.getElementById('testNotifBtn');
 
       if (unlockBtn) {
         unlockBtn.addEventListener('click', checkAppPassword);
@@ -1052,6 +1142,12 @@
       }
       if (splash) {
         splash.addEventListener('click', hideWelcomeSplashImmediately);
+      }
+      if (enableNotifBtn) {
+        enableNotifBtn.addEventListener('click', requestShiftNotificationPermission);
+      }
+      if (testNotifBtn) {
+        testNotifBtn.addEventListener('click', () => triggerShiftReminderNotification(true));
       }
       if (addAccountForm) {
         addAccountForm.addEventListener('submit', (e) => {
@@ -1129,6 +1225,17 @@
           isSunday: map.weekday === 'Sun',
           hour, minute: parseInt(map.minute, 10), second: parseInt(map.second, 10)
         };
+      }
+
+      function checkEightAmShiftReminder(uaeNow) {
+        if (!uaeNow || uaeNow.isSunday) return;
+        if (uaeNow.hour === 8 && uaeNow.minute === 0) {
+          const sentDate = localStorage.getItem(SHIFT_REMINDER_LAST_DATE_KEY);
+          if (sentDate !== uaeNow.dateStr) {
+            localStorage.setItem(SHIFT_REMINDER_LAST_DATE_KEY, uaeNow.dateStr);
+            triggerShiftReminderNotification(false);
+          }
+        }
       }
 
       function formatUaeTime(timestamp) {
@@ -1254,6 +1361,8 @@
 
         document.getElementById('liveDate').textContent = formatUaeFullDate(now);
         document.getElementById('liveClock').textContent = formatUaeClock(now);
+
+        checkEightAmShiftReminder(uaeNow);
 
         if (uaeNow.isSunday && !appState.activeSession) {
           document.getElementById('weeklyOffView').classList.remove('hidden');
@@ -1592,10 +1701,12 @@
 
       document.getElementById('openToolsBtn').addEventListener('click', () => {
         renderTeamAccountsList();
+        updateNotificationStatusBadge();
         document.getElementById('toolsModal').classList.remove('hidden');
       });
       document.getElementById('openAboutFooterBtn').addEventListener('click', () => {
         renderTeamAccountsList();
+        updateNotificationStatusBadge();
         document.getElementById('toolsModal').classList.remove('hidden');
       });
       document.getElementById('closeToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.add('hidden'));
