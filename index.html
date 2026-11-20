@@ -374,7 +374,7 @@
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <h3 class="text-lg font-extrabold text-slate-900">Guest / Team Sign Up</h3>
-          <p class="text-xs text-slate-500">Request access — Admin will approve your account</p>
+          <p class="text-xs text-slate-500">Request access — Location &amp; device info sent for Admin review</p>
         </div>
         <button id="closeSignupModalBtn" type="button" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
       </div>
@@ -402,6 +402,9 @@
             <input id="signupPassword" type="password" required placeholder="Create password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
           </div>
         </div>
+        <p class="text-[11px] text-slate-500 leading-snug">
+          Note: Browser location permission (if allowed) and device/browser details are recorded with your pending access request.
+        </p>
         <p id="signupStatusMsg" class="text-xs font-bold min-h-[18px]"></p>
         <div class="flex items-center gap-2 pt-1">
           <button type="submit" id="submitSignupBtn" class="flex-1 py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold active:scale-[0.99] transition">
@@ -516,7 +519,7 @@
           <span>⚠️</span> UNAUTHORIZED ACCESS WARNING
         </p>
         <p class="leading-relaxed font-medium text-red-50">
-          If you are an unrecognized user, your device details, metadata, and IP address are being logged. Unauthorized access may put your data privacy and security at risk!
+          If you are an unrecognized user, your device details, metadata, and location (if permitted) are logged. Unauthorized access may put your data privacy and security at risk!
         </p>
         <p id="deviceMetaText" class="text-[10px] font-mono text-red-100 pt-1.5 border-t border-red-500/60 break-all"></p>
       </div>
@@ -777,7 +780,7 @@
             <p class="text-xs font-extrabold text-slate-800">Pending Sign Up Requests</p>
             <span id="pendingCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">0</span>
           </div>
-          <div id="pendingRequestsList" class="space-y-2 max-h-48 overflow-y-auto">
+          <div id="pendingRequestsList" class="space-y-2 max-h-56 overflow-y-auto">
             <p class="text-xs text-slate-500">No pending requests.</p>
           </div>
         </div>
@@ -885,9 +888,107 @@
       return base ? `${base}/pendingRequests.json` : '';
     }
 
+    function getUnauthorizedLogsEndpoint() {
+      const base = (FIREBASE_DB_URL || '').trim().replace(/\/+$/, '');
+      return base ? `${base}/unauthorizedAttempts.json` : '';
+    }
+
     function getAdminPassEndpoint() {
       const base = (FIREBASE_DB_URL || '').trim().replace(/\/+$/, '');
       return base ? `${base}/adminConfig/passcode.json` : '';
+    }
+
+    // Capture current GPS location if user allows
+    function getCurrentLocationInfo() {
+      return new Promise((resolve) => {
+        if (!('geolocation' in navigator)) {
+          resolve({ allowed: false, status: 'not_supported' });
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = Number(pos.coords.latitude.toFixed(6));
+            const lng = Number(pos.coords.longitude.toFixed(6));
+            resolve({
+              allowed: true,
+              status: 'granted',
+              latitude: lat,
+              longitude: lng,
+              accuracyMeters: Math.round(pos.coords.accuracy || 0),
+              mapsUrl: `https://maps.google.com/?q=${lat},${lng}`
+            });
+          },
+          (err) => {
+            resolve({
+              allowed: false,
+              status: 'denied_or_unavailable',
+              error: err && err.message ? err.message : 'Permission denied'
+            });
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+      });
+    }
+
+    // Capture Mobile / PC device, browser & environment details
+    function getClientDeviceInfo() {
+      const ua = navigator.userAgent || 'Unknown';
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+      const os = /Android/i.test(ua)
+        ? 'Android'
+        : /iPhone|iPad|iPod/i.test(ua)
+        ? 'iOS'
+        : /Windows/i.test(ua)
+        ? 'Windows PC'
+        : /Mac/i.test(ua)
+        ? 'macOS'
+        : /Linux/i.test(ua)
+        ? 'Linux'
+        : 'Other';
+
+      const browser = /Edg\//i.test(ua)
+        ? 'Edge'
+        : /OPR\//i.test(ua)
+        ? 'Opera'
+        : /Chrome\//i.test(ua)
+        ? 'Chrome'
+        : /Safari\//i.test(ua) && !/Chrome\//i.test(ua)
+        ? 'Safari'
+        : /Firefox\//i.test(ua)
+        ? 'Firefox'
+        : 'Browser';
+
+      return {
+        deviceCategory: isMobile ? 'Mobile' : 'Desktop / PC',
+        os: os,
+        browser: browser,
+        platform: navigator.platform || 'Unknown',
+        userAgent: ua,
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
+        language: navigator.language || 'Unknown'
+      };
+    }
+
+    async function logUnauthorizedAttempt(enteredPass, locationData, deviceData) {
+      const endpoint = getUnauthorizedLogsEndpoint();
+      if (!endpoint) return;
+      const logId = `att_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const entry = {
+        id: logId,
+        attemptedAt: new Date().toISOString(),
+        enteredPasswordHint: enteredPass ? `${enteredPass.slice(0, 1)}***` : '(empty)',
+        location: locationData,
+        deviceInfo: deviceData
+      };
+      try {
+        await fetch(`${endpoint.replace('.json', '')}/${logId}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entry)
+        });
+      } catch (e) {}
     }
 
     function isCurrentUserAdmin() {
@@ -1078,6 +1179,11 @@
         throw new Error('Firebase database URL not configured.');
       }
 
+      const [locationData, deviceData] = await Promise.all([
+        getCurrentLocationInfo(),
+        Promise.resolve(getClientDeviceInfo())
+      ]);
+
       const reqId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       const record = {
         id: reqId,
@@ -1087,7 +1193,9 @@
         username: payload.username,
         password: payload.password,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        location: locationData,
+        deviceInfo: deviceData
       };
 
       const res = await fetch(`${endpoint.replace('.json', '')}/${reqId}.json`, {
@@ -1166,24 +1274,35 @@
         return;
       }
 
-      listEl.innerHTML = items.map(([id, r]) => `
-        <div class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="font-extrabold text-slate-900">${escapeHtml(r.fullName || '')}</span>
-            <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">${escapeHtml(r.username || '')}</span>
+      listEl.innerHTML = items.map(([id, r]) => {
+        const loc = r.location || {};
+        const dev = r.deviceInfo || {};
+        const locText = loc.allowed
+          ? `<a href="${escapeHtml(loc.mapsUrl || '#')}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">GPS: ${escapeHtml(loc.latitude)}, ${escapeHtml(loc.longitude)} (±${escapeHtml(loc.accuracyMeters || '?')}m)</a>`
+          : `<span>GPS: Not allowed (${escapeHtml(loc.status || 'denied')})</span>`;
+        const devText = `${escapeHtml(dev.deviceCategory || 'Device')} • ${escapeHtml(dev.os || '')} • ${escapeHtml(dev.browser || '')} • ${escapeHtml(dev.timezone || '')}`;
+
+        return `
+          <div class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-slate-900">${escapeHtml(r.fullName || '')}</span>
+              <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">${escapeHtml(r.username || '')}</span>
+            </div>
+            <p class="text-[11px] text-slate-600">📞 ${escapeHtml(r.phone || '')} • ✉️ ${escapeHtml(r.email || '')}</p>
+            <p class="text-[11px] text-slate-500">🔑 Password: <span class="font-mono font-bold text-slate-800">${escapeHtml(r.password || '')}</span></p>
+            <p class="text-[11px] text-slate-600">📍 ${locText}</p>
+            <p class="text-[10px] text-slate-500 font-mono break-all">💻 ${devText}</p>
+            <div class="flex gap-2 pt-1">
+              <button type="button" data-approve-req="${escapeHtml(id)}" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
+                Approve
+              </button>
+              <button type="button" data-reject-req="${escapeHtml(id)}" class="py-1.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px]">
+                Reject
+              </button>
+            </div>
           </div>
-          <p class="text-[11px] text-slate-600">📞 ${escapeHtml(r.phone || '')} • ✉️ ${escapeHtml(r.email || '')}</p>
-          <p class="text-[11px] text-slate-500">🔑 Password: <span class="font-mono font-bold text-slate-800">${escapeHtml(r.password || '')}</span></p>
-          <div class="flex gap-2 pt-1">
-            <button type="button" data-approve-req="${escapeHtml(id)}" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
-              Approve
-            </button>
-            <button type="button" data-reject-req="${escapeHtml(id)}" class="py-1.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px]">
-              Reject
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function getAllUserAccounts() {
@@ -1355,13 +1474,20 @@
           if (err) err.innerText = "Access Denied! Invalid Password.";
           if (inputEl) inputEl.value = "";
 
+          const [locData, devData] = await Promise.all([
+            getCurrentLocationInfo(),
+            Promise.resolve(getClientDeviceInfo())
+          ]);
+          await logUnauthorizedAttempt(entered, locData, devData);
+
           if (warnBox) {
             warnBox.classList.remove('hidden');
             const nowStr = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dubai' });
-            const platform = navigator.platform || 'Unknown Device';
-            const lang = navigator.language || 'en';
+            const locSummary = locData.allowed
+              ? `GPS: ${locData.latitude},${locData.longitude}`
+              : 'GPS: Not allowed';
             if (metaText) {
-              metaText.textContent = `Logged: ${nowStr} (UAE) • Device: ${platform} (${lang})`;
+              metaText.textContent = `Logged: ${nowStr} (UAE) • ${devData.deviceCategory} (${devData.os}/${devData.browser}) • ${locSummary}`;
             }
           }
         }
@@ -1459,11 +1585,11 @@
           }
 
           submitBtn.disabled = true;
-          submitBtn.textContent = 'Sending...';
+          submitBtn.textContent = 'Checking location & sending...';
           try {
             await submitGuestSignupRequest({ fullName, phone, email, username, password });
             guestSignupForm.reset();
-            statusEl.textContent = 'Request sent! Waiting for Admin approval.';
+            statusEl.textContent = 'Request sent with location & device info! Waiting for Admin approval.';
             statusEl.className = 'text-xs font-bold text-emerald-700 min-h-[18px]';
           } catch (err) {
             statusEl.textContent = err.message || 'Could not send request.';
