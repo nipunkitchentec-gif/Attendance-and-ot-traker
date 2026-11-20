@@ -274,88 +274,23 @@
       50% { transform: rotate(16deg); }
     }
 
-    .walk-track-right {
-      animation: walkRight 16s linear infinite;
-    }
+    .walk-track-right { animation: walkRight 16s linear infinite; }
+    .walk-track-right-slow { animation: walkRight 21s linear -7s infinite; }
+    .walk-track-left { animation: walkLeft 18s linear -4s infinite; }
+    .person-bob { animation: stepBob 0.55s ease-in-out infinite; }
+    .leg-a { transform-box: fill-box; transform-origin: top center; animation: legSwingA 0.55s ease-in-out infinite; }
+    .leg-b { transform-box: fill-box; transform-origin: top center; animation: legSwingB 0.55s ease-in-out infinite; }
+    .arm-a { transform-box: fill-box; transform-origin: top center; animation: armSwingA 0.55s ease-in-out infinite; }
+    .arm-b { transform-box: fill-box; transform-origin: top center; animation: armSwingB 0.55s ease-in-out infinite; }
+    .cartoon-float { animation: cartoonFloat 3s ease-in-out infinite; }
+    .clock-hand-spin { animation: handSpin 6s linear infinite; }
+    .cartoon-wave-left { animation: waveLeft 1.6s ease-in-out infinite; }
+    .cartoon-twinkle { transform-box: fill-box; transform-origin: center; animation: twinkleSoft 2.2s ease-in-out infinite; }
+    .cartoon-twinkle-delay { transform-box: fill-box; transform-origin: center; animation: twinkleSoft 2.2s ease-in-out 1.1s infinite; }
+    .cartoon-blink { transform-box: fill-box; transform-origin: center; animation: blinkSoft 4.2s infinite; }
 
-    .walk-track-right-slow {
-      animation: walkRight 21s linear -7s infinite;
-    }
-
-    .walk-track-left {
-      animation: walkLeft 18s linear -4s infinite;
-    }
-
-    .person-bob {
-      animation: stepBob 0.55s ease-in-out infinite;
-    }
-
-    .leg-a {
-      transform-box: fill-box;
-      transform-origin: top center;
-      animation: legSwingA 0.55s ease-in-out infinite;
-    }
-
-    .leg-b {
-      transform-box: fill-box;
-      transform-origin: top center;
-      animation: legSwingB 0.55s ease-in-out infinite;
-    }
-
-    .arm-a {
-      transform-box: fill-box;
-      transform-origin: top center;
-      animation: armSwingA 0.55s ease-in-out infinite;
-    }
-
-    .arm-b {
-      transform-box: fill-box;
-      transform-origin: top center;
-      animation: armSwingB 0.55s ease-in-out infinite;
-    }
-
-    .cartoon-float {
-      animation: cartoonFloat 3s ease-in-out infinite;
-    }
-
-    .clock-hand-spin {
-      animation: handSpin 6s linear infinite;
-    }
-
-    .cartoon-wave-left {
-      animation: waveLeft 1.6s ease-in-out infinite;
-    }
-
-    .cartoon-twinkle {
-      transform-box: fill-box;
-      transform-origin: center;
-      animation: twinkleSoft 2.2s ease-in-out infinite;
-    }
-
-    .cartoon-twinkle-delay {
-      transform-box: fill-box;
-      transform-origin: center;
-      animation: twinkleSoft 2.2s ease-in-out 1.1s infinite;
-    }
-
-    .cartoon-blink {
-      transform-box: fill-box;
-      transform-origin: center;
-      animation: blinkSoft 4.2s infinite;
-    }
-
-    .login-title {
-      margin: 0 0 4px 0;
-      font-size: 19px;
-      font-weight: 800;
-      color: #1e293b;
-    }
-
-    .login-subtitle {
-      margin: 0 0 16px 0;
-      font-size: 13px;
-      color: #64748b;
-    }
+    .login-title { margin: 0 0 4px 0; font-size: 19px; font-weight: 800; color: #1e293b; }
+    .login-subtitle { margin: 0 0 16px 0; font-size: 13px; color: #64748b; }
 
     .input-group input {
       width: 100%;
@@ -370,9 +305,7 @@
       margin-bottom: 14px;
     }
 
-    .input-group input:focus {
-      border-color: #0056b3;
-    }
+    .input-group input:focus { border-color: #0056b3; }
 
     .login-btn {
       width: 100%;
@@ -388,10 +321,7 @@
       transition: background 0.2s, transform 0.1s;
     }
 
-    .login-btn:active {
-      transform: scale(0.98);
-      background: #004494;
-    }
+    .login-btn:active { transform: scale(0.98); background: #004494; }
 
     .error-text {
       color: #e11d48;
@@ -727,7 +657,6 @@
         <button id="closeToolsBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
       </div>
 
-      <!-- 8:00 AM Shift Reminder Settings -->
       <div class="space-y-2.5 pt-1">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">8:00 AM Shift Reminder</p>
         <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-2">
@@ -756,8 +685,12 @@
         </button>
       </div>
 
-      <div class="space-y-2.5 pt-2 border-t border-slate-100">
-        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Team Names &amp; Passwords</p>
+      <!-- ADMIN ONLY: Team Names & Passwords -->
+      <div id="adminTeamAccountsSection" class="hidden space-y-2.5 pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Admin: Team Names &amp; Passwords</p>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">ADMIN ONLY</span>
+        </div>
         <form id="addTeamAccountForm" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
           <div class="grid grid-cols-2 gap-2">
             <input
@@ -821,8 +754,15 @@
     const AUTO_LOCK_MS = 18 * 60 * 60 * 1000;
     const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
     const UNLOCKED_USER_KEY = 'sk_app_unlocked_user';
+    const UNLOCKED_IS_ADMIN_KEY = 'sk_app_unlocked_is_admin';
     const CUSTOM_ACCOUNTS_KEY = 'sk_custom_team_accounts_v1';
     const SHIFT_REMINDER_LAST_DATE_KEY = 'sk_shift_reminder_sent_date_v1';
+
+    const ADMIN_PASSCODE = 'SKFZE2026';
+    const ADMIN_NAME = 'Nipun';
+
+    // Optional Cloud Sync endpoint (for cross-phone sync if connected to a backend/Firestore REST endpoint)
+    const CLOUD_ACCOUNTS_SYNC_URL = '';
 
     const SHIFT_REMINDER_TITLE = 'Shift Reminder!';
     const SHIFT_REMINDER_BODY =
@@ -830,12 +770,25 @@
       "Don't forget to keep track of your working hours and calculate your overtime. Every extra hour counts!\n" +
       "Stay on time. Track your hours. Know your overtime!";
 
-    const DEFAULT_USER_ACCOUNTS = {
-      'SKFZE2026': 'Nipun'
-    };
-
     let welcomeHoldTimer = null;
     let welcomeHideTimer = null;
+
+    function isCurrentUserAdmin() {
+      return localStorage.getItem('sk_app_unlocked') === 'true' &&
+        !isSessionExpired() &&
+        localStorage.getItem(UNLOCKED_IS_ADMIN_KEY) === 'true';
+    }
+
+    function syncAdminSectionVisibility() {
+      const adminSection = document.getElementById('adminTeamAccountsSection');
+      if (!adminSection) return;
+      if (isCurrentUserAdmin()) {
+        adminSection.classList.remove('hidden');
+        renderTeamAccountsList();
+      } else {
+        adminSection.classList.add('hidden');
+      }
+    }
 
     function updateNotificationStatusBadge() {
       const badge = document.getElementById('notifStatusBadge');
@@ -902,24 +855,6 @@
       }
     }
 
-    function getAllUserAccounts() {
-      const merged = { ...DEFAULT_USER_ACCOUNTS };
-      try {
-        const raw = localStorage.getItem(CUSTOM_ACCOUNTS_KEY);
-        if (raw) {
-          const custom = JSON.parse(raw);
-          if (custom && typeof custom === 'object') {
-            for (const [pass, name] of Object.entries(custom)) {
-              if (String(pass).trim() && String(name).trim()) {
-                merged[String(pass).trim()] = String(name).trim();
-              }
-            }
-          }
-        }
-      } catch (err) {}
-      return merged;
-    }
-
     function getCustomAccountsOnly() {
       try {
         const raw = localStorage.getItem(CUSTOM_ACCOUNTS_KEY);
@@ -934,25 +869,64 @@
       try {
         localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(obj));
       } catch (err) {}
+
+      if (CLOUD_ACCOUNTS_SYNC_URL) {
+        fetch(CLOUD_ACCOUNTS_SYNC_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(obj)
+        }).catch(() => {});
+      }
+    }
+
+    async function pullCloudAccountsIfConfigured() {
+      if (!CLOUD_ACCOUNTS_SYNC_URL) return;
+      try {
+        const res = await fetch(CLOUD_ACCOUNTS_SYNC_URL, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(data));
+          if (isCurrentUserAdmin()) {
+            renderTeamAccountsList();
+          }
+        }
+      } catch (e) {}
+    }
+
+    function getAllUserAccounts() {
+      const merged = {
+        [ADMIN_PASSCODE]: ADMIN_NAME
+      };
+      const custom = getCustomAccountsOnly();
+      for (const [pass, name] of Object.entries(custom)) {
+        const p = String(pass).trim();
+        const n = String(name).trim();
+        if (p && n && p !== ADMIN_PASSCODE) {
+          merged[p] = n;
+        }
+      }
+      return merged;
     }
 
     function renderTeamAccountsList() {
+      if (!isCurrentUserAdmin()) return;
       const listEl = document.getElementById('teamAccountsList');
       if (!listEl) return;
 
       const custom = getCustomAccountsOnly();
       const entries = Object.entries(custom);
 
-      const defaultHtml = Object.entries(DEFAULT_USER_ACCOUNTS).map(([pass, name]) => `
+      const adminHtml = `
         <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-100 text-xs">
           <div>
-            <span class="font-bold text-slate-800">${escapeHtml(name)}</span>
+            <span class="font-bold text-slate-800">${escapeHtml(ADMIN_NAME)}</span>
             <span class="text-slate-400 mx-1">•</span>
-            <span class="font-mono text-slate-600">${escapeHtml(pass)}</span>
+            <span class="font-mono text-slate-600">${escapeHtml(ADMIN_PASSCODE)}</span>
           </div>
-          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-200 text-slate-600">Default</span>
+          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">Admin</span>
         </div>
-      `).join('');
+      `;
 
       const customHtml = entries.map(([pass, name]) => `
         <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-xs">
@@ -967,7 +941,7 @@
         </div>
       `).join('');
 
-      listEl.innerHTML = defaultHtml + customHtml;
+      listEl.innerHTML = adminHtml + customHtml;
     }
 
     function escapeHtml(str) {
@@ -1041,6 +1015,7 @@
           localStorage.removeItem('sk_app_unlocked');
           localStorage.removeItem(UNLOCKED_AT_KEY);
           localStorage.removeItem(UNLOCKED_USER_KEY);
+          localStorage.removeItem(UNLOCKED_IS_ADMIN_KEY);
           const errEl = document.getElementById('errorMsg');
           if (errEl) {
             errEl.innerText = wasExpired ? "Session expired after 18 hours. Please unlock again." : "";
@@ -1052,6 +1027,7 @@
       } else {
         overlay.style.display = 'none';
       }
+      syncAdminSectionVisibility();
     }
 
     function checkAppPassword() {
@@ -1067,9 +1043,13 @@
         const matchedName = Object.prototype.hasOwnProperty.call(accounts, entered) ? accounts[entered] : null;
 
         if (matchedName) {
+          const isAdminLogin = entered === ADMIN_PASSCODE;
           localStorage.setItem('sk_app_unlocked', 'true');
           localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
           localStorage.setItem(UNLOCKED_USER_KEY, matchedName);
+          localStorage.setItem(UNLOCKED_IS_ADMIN_KEY, isAdminLogin ? 'true' : 'false');
+          syncAdminSectionVisibility();
+
           if (overlay) overlay.style.display = 'none';
           if (inputEl) inputEl.value = "";
           if (err) err.innerText = "";
@@ -1104,6 +1084,9 @@
       localStorage.removeItem('sk_app_unlocked');
       localStorage.removeItem(UNLOCKED_AT_KEY);
       localStorage.removeItem(UNLOCKED_USER_KEY);
+      localStorage.removeItem(UNLOCKED_IS_ADMIN_KEY);
+      syncAdminSectionVisibility();
+
       const inputEl = document.getElementById('appPassword');
       if (inputEl) inputEl.value = "";
       const errEl = document.getElementById('errorMsg');
@@ -1118,8 +1101,8 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       syncLockState();
-      renderTeamAccountsList();
       updateNotificationStatusBadge();
+      pullCloudAccountsIfConfigured();
 
       const unlockBtn = document.getElementById('unlockAppBtn');
       const passInput = document.getElementById('appPassword');
@@ -1152,11 +1135,20 @@
       if (addAccountForm) {
         addAccountForm.addEventListener('submit', (e) => {
           e.preventDefault();
+          if (!isCurrentUserAdmin()) {
+            alert('Only Admin can add team passwords.');
+            return;
+          }
           const nameInput = document.getElementById('newAccountName');
           const passInputNew = document.getElementById('newAccountPassword');
           const nameVal = (nameInput.value || '').trim();
           const passVal = (passInputNew.value || '').trim();
           if (!nameVal || !passVal) return;
+
+          if (passVal === ADMIN_PASSCODE) {
+            alert('Cannot overwrite Admin password.');
+            return;
+          }
 
           const custom = getCustomAccountsOnly();
           custom[passVal] = nameVal;
@@ -1170,6 +1162,7 @@
       }
       if (accountsListEl) {
         accountsListEl.addEventListener('click', (e) => {
+          if (!isCurrentUserAdmin()) return;
           const btn = e.target.closest('button[data-delete-pass]');
           if (!btn) return;
           const passKey = decodeURIComponent(btn.dataset.deletePass);
@@ -1184,6 +1177,7 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         syncLockState();
+        pullCloudAccountsIfConfigured();
       }
     });
 
@@ -1700,12 +1694,12 @@
       });
 
       document.getElementById('openToolsBtn').addEventListener('click', () => {
-        renderTeamAccountsList();
+        syncAdminSectionVisibility();
         updateNotificationStatusBadge();
         document.getElementById('toolsModal').classList.remove('hidden');
       });
       document.getElementById('openAboutFooterBtn').addEventListener('click', () => {
-        renderTeamAccountsList();
+        syncAdminSectionVisibility();
         updateNotificationStatusBadge();
         document.getElementById('toolsModal').classList.remove('hidden');
       });
