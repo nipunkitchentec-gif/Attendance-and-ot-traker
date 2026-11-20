@@ -84,7 +84,7 @@
       max-width: 440px;
       background: #102336;
       border-radius: 26px;
-      padding: 32px 24px;
+      padding: 30px 24px 32px 24px;
       text-align: center;
       color: #ffffff;
       box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
@@ -102,6 +102,20 @@
     #welcomeSplashOverlay.fade-out .welcome-banner-card {
       transform: translateY(-10px) scale(0.98);
       opacity: 0;
+    }
+
+    .welcome-user-pill {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.16);
+      border: 1px solid rgba(52, 211, 153, 0.38);
+      color: #6ee7b7;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
 
     .welcome-heading {
@@ -396,9 +410,10 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col items-center">
 
-  <!-- Welcome Animation Screen after Password Unlock -->
+  <!-- Welcome Animation Screen with Logged-in User Name -->
   <div id="welcomeSplashOverlay" role="dialog" aria-label="Welcome Message">
     <div class="welcome-banner-card">
+      <div id="welcomeUserLabel" class="welcome-user-pill">NIPUN</div>
       <h2 class="welcome-heading">WELCOME!</h2>
       <p class="welcome-warm-line">A Warm Welcome to You,</p>
       <p class="welcome-team-line">The Hardworking Team!</p>
@@ -724,6 +739,33 @@
         </button>
       </div>
 
+      <!-- Add / Manage User Names & Passwords -->
+      <div class="space-y-2.5 pt-2 border-t border-slate-100">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Team Names &amp; Passwords</p>
+        <form id="addTeamAccountForm" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+          <div class="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              id="newAccountName"
+              placeholder="Name (e.g. Kasun)"
+              required
+              class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+            />
+            <input
+              type="text"
+              id="newAccountPassword"
+              placeholder="Password (e.g. SK102)"
+              required
+              class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+            />
+          </div>
+          <button type="submit" class="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition active:scale-[0.99]">
+            + Add Name &amp; Password
+          </button>
+        </form>
+        <div id="teamAccountsList" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+      </div>
+
       <div class="space-y-2.5 pt-2 border-t border-slate-100">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Phone Data Backup &amp; Restore</p>
         <div class="grid grid-cols-2 gap-2.5">
@@ -762,10 +804,92 @@
   <script>
     const AUTO_LOCK_MS = 18 * 60 * 60 * 1000;
     const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
-    const EXPECTED_PASSCODE = 'SKFZE2026';
+    const UNLOCKED_USER_KEY = 'sk_app_unlocked_user';
+    const CUSTOM_ACCOUNTS_KEY = 'sk_custom_team_accounts_v1';
+
+    // Default built-in passwords & names (you can also add more here or via Menu)
+    const DEFAULT_USER_ACCOUNTS = {
+      'SKFZE2026': 'Nipun'
+    };
 
     let welcomeHoldTimer = null;
     let welcomeHideTimer = null;
+
+    function getAllUserAccounts() {
+      const merged = { ...DEFAULT_USER_ACCOUNTS };
+      try {
+        const raw = localStorage.getItem(CUSTOM_ACCOUNTS_KEY);
+        if (raw) {
+          const custom = JSON.parse(raw);
+          if (custom && typeof custom === 'object') {
+            for (const [pass, name] of Object.entries(custom)) {
+              if (String(pass).trim() && String(name).trim()) {
+                merged[String(pass).trim()] = String(name).trim();
+              }
+            }
+          }
+        }
+      } catch (err) {}
+      return merged;
+    }
+
+    function getCustomAccountsOnly() {
+      try {
+        const raw = localStorage.getItem(CUSTOM_ACCOUNTS_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function saveCustomAccountsOnly(obj) {
+      try {
+        localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(obj));
+      } catch (err) {}
+    }
+
+    function renderTeamAccountsList() {
+      const listEl = document.getElementById('teamAccountsList');
+      if (!listEl) return;
+
+      const custom = getCustomAccountsOnly();
+      const entries = Object.entries(custom);
+
+      const defaultHtml = Object.entries(DEFAULT_USER_ACCOUNTS).map(([pass, name]) => `
+        <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-100 text-xs">
+          <div>
+            <span class="font-bold text-slate-800">${escapeHtml(name)}</span>
+            <span class="text-slate-400 mx-1">•</span>
+            <span class="font-mono text-slate-600">${escapeHtml(pass)}</span>
+          </div>
+          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-200 text-slate-600">Default</span>
+        </div>
+      `).join('');
+
+      const customHtml = entries.map(([pass, name]) => `
+        <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-xs">
+          <div>
+            <span class="font-bold text-slate-800">${escapeHtml(name)}</span>
+            <span class="text-slate-400 mx-1">•</span>
+            <span class="font-mono text-slate-600">${escapeHtml(pass)}</span>
+          </div>
+          <button type="button" data-delete-pass="${encodeURIComponent(pass)}" class="text-rose-600 hover:text-rose-700 font-bold text-[11px] px-2 py-0.5 rounded bg-rose-50">
+            Remove
+          </button>
+        </div>
+      `).join('');
+
+      listEl.innerHTML = defaultHtml + customHtml;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
 
     function clearWelcomeTimers() {
       if (welcomeHoldTimer) {
@@ -789,10 +913,15 @@
       }, 450);
     }
 
-    function playWelcomeSplash() {
+    function playWelcomeSplash(userName = 'Nipun') {
       clearWelcomeTimers();
       const splash = document.getElementById('welcomeSplashOverlay');
+      const userLabel = document.getElementById('welcomeUserLabel');
       if (!splash) return;
+
+      if (userLabel) {
+        userLabel.textContent = String(userName || 'Team Member').toUpperCase();
+      }
 
       splash.style.display = 'flex';
       splash.classList.remove('fade-out');
@@ -805,7 +934,7 @@
           splash.classList.remove('show', 'fade-out');
           splash.style.display = 'none';
         }, 550);
-      }, 2600);
+      }, 2800);
     }
 
     function isSessionExpired() {
@@ -824,6 +953,7 @@
           const wasExpired = isUnlocked && isSessionExpired();
           localStorage.removeItem('sk_app_unlocked');
           localStorage.removeItem(UNLOCKED_AT_KEY);
+          localStorage.removeItem(UNLOCKED_USER_KEY);
           const errEl = document.getElementById('errorMsg');
           if (errEl) {
             errEl.innerText = wasExpired ? "Session expired after 18 hours. Please unlock again." : "";
@@ -846,14 +976,18 @@
 
       try {
         const entered = ((inputEl && inputEl.value) || '').trim();
-        if (entered === EXPECTED_PASSCODE) {
+        const accounts = getAllUserAccounts();
+        const matchedName = Object.prototype.hasOwnProperty.call(accounts, entered) ? accounts[entered] : null;
+
+        if (matchedName) {
           localStorage.setItem('sk_app_unlocked', 'true');
           localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
+          localStorage.setItem(UNLOCKED_USER_KEY, matchedName);
           if (overlay) overlay.style.display = 'none';
           if (inputEl) inputEl.value = "";
           if (err) err.innerText = "";
           if (warnBox) warnBox.classList.add('hidden');
-          playWelcomeSplash();
+          playWelcomeSplash(matchedName);
         } else {
           if (err) err.innerText = "Access Denied! Invalid Password.";
           if (inputEl) inputEl.value = "";
@@ -882,6 +1016,7 @@
       }
       localStorage.removeItem('sk_app_unlocked');
       localStorage.removeItem(UNLOCKED_AT_KEY);
+      localStorage.removeItem(UNLOCKED_USER_KEY);
       const inputEl = document.getElementById('appPassword');
       if (inputEl) inputEl.value = "";
       const errEl = document.getElementById('errorMsg');
@@ -896,9 +1031,13 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       syncLockState();
+      renderTeamAccountsList();
+
       const unlockBtn = document.getElementById('unlockAppBtn');
       const passInput = document.getElementById('appPassword');
       const splash = document.getElementById('welcomeSplashOverlay');
+      const addAccountForm = document.getElementById('addTeamAccountForm');
+      const accountsListEl = document.getElementById('teamAccountsList');
 
       if (unlockBtn) {
         unlockBtn.addEventListener('click', checkAppPassword);
@@ -913,6 +1052,36 @@
       }
       if (splash) {
         splash.addEventListener('click', hideWelcomeSplashImmediately);
+      }
+      if (addAccountForm) {
+        addAccountForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const nameInput = document.getElementById('newAccountName');
+          const passInputNew = document.getElementById('newAccountPassword');
+          const nameVal = (nameInput.value || '').trim();
+          const passVal = (passInputNew.value || '').trim();
+          if (!nameVal || !passVal) return;
+
+          const custom = getCustomAccountsOnly();
+          custom[passVal] = nameVal;
+          saveCustomAccountsOnly(custom);
+
+          nameInput.value = '';
+          passInputNew.value = '';
+          renderTeamAccountsList();
+          alert(`Added "${nameVal}" with password "${passVal}"`);
+        });
+      }
+      if (accountsListEl) {
+        accountsListEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-delete-pass]');
+          if (!btn) return;
+          const passKey = decodeURIComponent(btn.dataset.deletePass);
+          const custom = getCustomAccountsOnly();
+          delete custom[passKey];
+          saveCustomAccountsOnly(custom);
+          renderTeamAccountsList();
+        });
       }
     });
 
@@ -1421,8 +1590,14 @@
         renderUI();
       });
 
-      document.getElementById('openToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
-      document.getElementById('openAboutFooterBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
+      document.getElementById('openToolsBtn').addEventListener('click', () => {
+        renderTeamAccountsList();
+        document.getElementById('toolsModal').classList.remove('hidden');
+      });
+      document.getElementById('openAboutFooterBtn').addEventListener('click', () => {
+        renderTeamAccountsList();
+        document.getElementById('toolsModal').classList.remove('hidden');
+      });
       document.getElementById('closeToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.add('hidden'));
       document.getElementById('exportPdfBtn').addEventListener('click', exportMonthlyPdf);
       document.getElementById('exportCsvBtn').addEventListener('click', exportMonthlyCsv);
