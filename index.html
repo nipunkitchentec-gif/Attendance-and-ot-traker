@@ -182,7 +182,7 @@
       position: relative;
       z-index: 2;
       background: rgba(255, 255, 255, 0.97);
-      padding: 24px 20px;
+      padding: 22px 20px;
       border-radius: 24px;
       box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
       text-align: center;
@@ -193,22 +193,22 @@
     }
 
     .logo-container {
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       padding: 2px;
     }
 
     .company-logo {
       width: 100%;
-      max-width: 220px;
+      max-width: 210px;
       height: auto;
       object-fit: contain;
       margin: 0 auto;
     }
 
     .mini-cartoon-stage {
-      margin: 2px auto 10px auto;
+      margin: 2px auto 8px auto;
       max-width: 240px;
-      height: 96px;
+      height: 88px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -289,32 +289,32 @@
     .cartoon-twinkle-delay { transform-box: fill-box; transform-origin: center; animation: twinkleSoft 2.2s ease-in-out 1.1s infinite; }
     .cartoon-blink { transform-box: fill-box; transform-origin: center; animation: blinkSoft 4.2s infinite; }
 
-    .login-title { margin: 0 0 4px 0; font-size: 19px; font-weight: 800; color: #1e293b; }
-    .login-subtitle { margin: 0 0 16px 0; font-size: 13px; color: #64748b; }
+    .login-title { margin: 0 0 2px 0; font-size: 19px; font-weight: 800; color: #1e293b; }
+    .login-subtitle { margin: 0 0 12px 0; font-size: 13px; color: #64748b; }
 
     .input-group input {
       width: 100%;
-      padding: 14px;
-      font-size: 16px;
+      padding: 13px;
+      font-size: 15px;
       text-align: center;
       border: 2px solid #cbd5e1;
       border-radius: 14px;
       outline: none;
       box-sizing: border-box;
       transition: border-color 0.3s;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .input-group input:focus { border-color: #0056b3; }
 
     .login-btn {
       width: 100%;
-      padding: 14px;
+      padding: 13px;
       background: #0056b3;
       color: #ffffff;
       border: none;
       border-radius: 14px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0, 86, 179, 0.25);
@@ -323,11 +323,27 @@
 
     .login-btn:active { transform: scale(0.98); background: #004494; }
 
+    .signup-link-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .signup-link-btn:hover { background: #e2e8f0; }
+
     .error-text {
       color: #e11d48;
       font-size: 13px;
       font-weight: 700;
-      margin-top: 12px;
+      margin-top: 10px;
       min-height: 18px;
     }
 
@@ -349,6 +365,53 @@
         Your dedication and hard work are truly valued.<br />
         We're glad to have you here.
       </p>
+    </div>
+  </div>
+
+  <!-- Guest / New User Sign Up Request Modal -->
+  <div id="signupModal" class="hidden fixed inset-0 z-[100001] bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto animate-fade-in">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-lg font-extrabold text-slate-900">Guest / Team Sign Up</h3>
+          <p class="text-xs text-slate-500">Request access — Admin will approve your account</p>
+        </div>
+        <button id="closeSignupModalBtn" type="button" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      </div>
+
+      <form id="guestSignupForm" class="space-y-2.5">
+        <div>
+          <label for="signupFullName" class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+          <input id="signupFullName" type="text" required placeholder="e.g. Kasun Perera" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
+        </div>
+        <div>
+          <label for="signupPhone" class="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+          <input id="signupPhone" type="tel" required placeholder="e.g. +971 50 123 4567" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
+        </div>
+        <div>
+          <label for="signupEmail" class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+          <input id="signupEmail" type="email" required placeholder="e.g. name@example.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="signupUsername" class="block text-xs font-bold text-slate-700 mb-1">Username</label>
+            <input id="signupUsername" type="text" required placeholder="e.g. kasun.t" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
+          </div>
+          <div>
+            <label for="signupPassword" class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+            <input id="signupPassword" type="password" required placeholder="Create password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
+          </div>
+        </div>
+        <p id="signupStatusMsg" class="text-xs font-bold min-h-[18px]"></p>
+        <div class="flex items-center gap-2 pt-1">
+          <button type="submit" id="submitSignupBtn" class="flex-1 py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold active:scale-[0.99] transition">
+            Send Pending Request
+          </button>
+          <button type="button" id="cancelSignupBtn" class="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold active:scale-[0.99] transition">
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -411,7 +474,7 @@
       </div>
 
       <div class="mini-cartoon-stage" aria-hidden="true">
-        <svg viewBox="0 0 240 105" class="w-full h-[96px] mx-auto overflow-visible">
+        <svg viewBox="0 0 240 105" class="w-full h-[88px] mx-auto overflow-visible">
           <ellipse cx="120" cy="96" rx="76" ry="6" fill="#e2e8f0" />
           <g class="cartoon-float">
             <circle cx="120" cy="48" r="28" fill="#eff6ff" stroke="#1d4ed8" stroke-width="3" />
@@ -445,6 +508,7 @@
       </div>
 
       <button type="button" id="unlockAppBtn" class="login-btn">Unlock App</button>
+      <button type="button" id="openSignupModalBtn" class="signup-link-btn">Guest / New User Sign Up (Request Access)</button>
       <p id="errorMsg" class="error-text"></p>
 
       <div id="securityWarningBox" class="hidden mt-3 p-3.5 rounded-2xl bg-red-600 text-white text-left text-xs shadow-lg border-2 border-red-800 space-y-1.5">
@@ -685,34 +749,65 @@
         </button>
       </div>
 
-      <!-- ADMIN ONLY: Team Names & Passwords -->
-      <div id="adminTeamAccountsSection" class="hidden space-y-2.5 pt-2 border-t border-slate-100">
+      <!-- ADMIN ONLY: Change Admin Password, Pending Requests & Team Passwords -->
+      <div id="adminTeamAccountsSection" class="hidden space-y-3.5 pt-2 border-t border-slate-100">
         <div class="flex items-center justify-between">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Admin: Team Names &amp; Passwords</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Admin Controls</p>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">ADMIN ONLY</span>
         </div>
-        <form id="addTeamAccountForm" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
-          <div class="grid grid-cols-2 gap-2">
-            <input
-              type="text"
-              id="newAccountName"
-              placeholder="Name (e.g. Kasun)"
-              required
-              class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
-            />
-            <input
-              type="text"
-              id="newAccountPassword"
-              placeholder="Password (e.g. SK102)"
-              required
-              class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
-            />
-          </div>
-          <button type="submit" class="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition active:scale-[0.99]">
-            + Add Name &amp; Password
+
+        <!-- Change Admin Password -->
+        <form id="changeAdminPassForm" class="space-y-2 bg-amber-50/70 p-3 rounded-2xl border border-amber-200/80">
+          <p class="text-xs font-extrabold text-amber-900">Change My Admin Password</p>
+          <input
+            type="text"
+            id="newAdminPassInput"
+            placeholder="Enter New Admin Password"
+            required
+            class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-amber-600"
+          />
+          <button type="submit" class="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition active:scale-[0.99]">
+            Update Admin Password
           </button>
         </form>
-        <div id="teamAccountsList" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+
+        <!-- Pending Guest / Sign Up Requests -->
+        <div class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-extrabold text-slate-800">Pending Sign Up Requests</p>
+            <span id="pendingCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">0</span>
+          </div>
+          <div id="pendingRequestsList" class="space-y-2 max-h-48 overflow-y-auto">
+            <p class="text-xs text-slate-500">No pending requests.</p>
+          </div>
+        </div>
+
+        <!-- Direct Add Team Name & Password -->
+        <div class="space-y-2">
+          <p class="text-xs font-extrabold text-slate-800">Active Team Names &amp; Passwords</p>
+          <form id="addTeamAccountForm" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+            <div class="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                id="newAccountName"
+                placeholder="Name (e.g. Kasun)"
+                required
+                class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+              />
+              <input
+                type="text"
+                id="newAccountPassword"
+                placeholder="Password (e.g. SK102)"
+                required
+                class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+            <button type="submit" class="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition active:scale-[0.99]">
+              + Add Name &amp; Password
+            </button>
+          </form>
+          <div id="teamAccountsList" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+        </div>
       </div>
 
       <div class="space-y-2.5 pt-2 border-t border-slate-100">
@@ -756,13 +851,14 @@
     const UNLOCKED_USER_KEY = 'sk_app_unlocked_user';
     const UNLOCKED_IS_ADMIN_KEY = 'sk_app_unlocked_is_admin';
     const CUSTOM_ACCOUNTS_KEY = 'sk_custom_team_accounts_v1';
+    const ADMIN_PASS_OVERRIDE_KEY = 'sk_admin_pass_override_v1';
     const SHIFT_REMINDER_LAST_DATE_KEY = 'sk_shift_reminder_sent_date_v1';
 
-    const ADMIN_PASSCODE = 'SKFZE2026';
+    const DEFAULT_ADMIN_PASSCODE = 'SKFZE2026';
     const ADMIN_NAME = 'Nipun';
 
-    // Optional Cloud Sync endpoint (for cross-phone sync if connected to a backend/Firestore REST endpoint)
-    const CLOUD_ACCOUNTS_SYNC_URL = '';
+    // Connected Firebase Realtime Database URL
+    const FIREBASE_DB_URL = 'https://attendance-track-e1823-default-rtdb.asia-southeast1.firebasedatabase.app';
 
     const SHIFT_REMINDER_TITLE = 'Shift Reminder!';
     const SHIFT_REMINDER_BODY =
@@ -772,6 +868,27 @@
 
     let welcomeHoldTimer = null;
     let welcomeHideTimer = null;
+    let pendingRequestsCache = {};
+
+    function getAdminPasscode() {
+      const saved = (localStorage.getItem(ADMIN_PASS_OVERRIDE_KEY) || '').trim();
+      return saved || DEFAULT_ADMIN_PASSCODE;
+    }
+
+    function getAccountsEndpoint() {
+      const base = (FIREBASE_DB_URL || '').trim().replace(/\/+$/, '');
+      return base ? `${base}/teamAccounts.json` : '';
+    }
+
+    function getPendingEndpoint() {
+      const base = (FIREBASE_DB_URL || '').trim().replace(/\/+$/, '');
+      return base ? `${base}/pendingRequests.json` : '';
+    }
+
+    function getAdminPassEndpoint() {
+      const base = (FIREBASE_DB_URL || '').trim().replace(/\/+$/, '');
+      return base ? `${base}/adminConfig/passcode.json` : '';
+    }
 
     function isCurrentUserAdmin() {
       return localStorage.getItem('sk_app_unlocked') === 'true' &&
@@ -785,6 +902,7 @@
       if (isCurrentUserAdmin()) {
         adminSection.classList.remove('hidden');
         renderTeamAccountsList();
+        renderPendingRequestsList();
       } else {
         adminSection.classList.add('hidden');
       }
@@ -865,44 +983,219 @@
       }
     }
 
-    function saveCustomAccountsOnly(obj) {
+    async function saveCustomAccountsOnly(obj) {
       try {
         localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(obj));
       } catch (err) {}
 
-      if (CLOUD_ACCOUNTS_SYNC_URL) {
-        fetch(CLOUD_ACCOUNTS_SYNC_URL, {
+      const endpoint = getAccountsEndpoint();
+      if (!endpoint) return;
+
+      try {
+        await fetch(endpoint, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(obj)
-        }).catch(() => {});
+          body: JSON.stringify(obj || {})
+        });
+      } catch (err) {}
+    }
+
+    async function updateAdminPasscode(newPass) {
+      const cleanPass = String(newPass || '').trim();
+      if (!cleanPass) return false;
+
+      localStorage.setItem(ADMIN_PASS_OVERRIDE_KEY, cleanPass);
+      const endpoint = getAdminPassEndpoint();
+      if (endpoint) {
+        try {
+          await fetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleanPass)
+          });
+        } catch (e) {}
       }
+      return true;
     }
 
     async function pullCloudAccountsIfConfigured() {
-      if (!CLOUD_ACCOUNTS_SYNC_URL) return;
-      try {
-        const res = await fetch(CLOUD_ACCOUNTS_SYNC_URL, { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data && typeof data === 'object') {
-          localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(data));
-          if (isCurrentUserAdmin()) {
-            renderTeamAccountsList();
+      const adminEndpoint = getAdminPassEndpoint();
+      if (adminEndpoint) {
+        try {
+          const rAdmin = await fetch(adminEndpoint, { cache: 'no-store' });
+          if (rAdmin.ok) {
+            const cloudPass = await rAdmin.json();
+            if (typeof cloudPass === 'string' && cloudPass.trim()) {
+              localStorage.setItem(ADMIN_PASS_OVERRIDE_KEY, cloudPass.trim());
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
+
+      const endpoint = getAccountsEndpoint();
+      if (endpoint) {
+        try {
+          const res = await fetch(endpoint, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+              const adminPass = getAdminPasscode();
+              const cleaned = {};
+              for (const [pass, name] of Object.entries(data)) {
+                const p = String(pass).trim();
+                const n = String(name).trim();
+                if (p && n && p !== adminPass) {
+                  cleaned[p] = n;
+                }
+              }
+              localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(cleaned));
+              if (isCurrentUserAdmin()) {
+                renderTeamAccountsList();
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      const pendingEndpoint = getPendingEndpoint();
+      if (pendingEndpoint) {
+        try {
+          const resP = await fetch(pendingEndpoint, { cache: 'no-store' });
+          if (resP.ok) {
+            const pData = await resP.json();
+            pendingRequestsCache = (pData && typeof pData === 'object') ? pData : {};
+            if (isCurrentUserAdmin()) {
+              renderPendingRequestsList();
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    async function submitGuestSignupRequest(payload) {
+      const endpoint = getPendingEndpoint();
+      if (!endpoint) {
+        throw new Error('Firebase database URL not configured.');
+      }
+
+      const reqId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      const record = {
+        id: reqId,
+        fullName: payload.fullName,
+        phone: payload.phone,
+        email: payload.email,
+        username: payload.username,
+        password: payload.password,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      const res = await fetch(`${endpoint.replace('.json', '')}/${reqId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to send request to server.');
+      }
+
+      pendingRequestsCache[reqId] = record;
+      return record;
+    }
+
+    async function approvePendingRequest(reqId) {
+      const req = pendingRequestsCache[reqId];
+      if (!req) return;
+
+      const passVal = String(req.password || '').trim();
+      const displayLabel = `${String(req.fullName || '').trim()} (${String(req.username || '').trim()})`.trim();
+
+      if (passVal && passVal !== getAdminPasscode()) {
+        const custom = getCustomAccountsOnly();
+        custom[passVal] = displayLabel || req.username || req.fullName || 'Member';
+        await saveCustomAccountsOnly(custom);
+      }
+
+      const pendingEndpoint = getPendingEndpoint();
+      if (pendingEndpoint) {
+        try {
+          await fetch(`${pendingEndpoint.replace('.json', '')}/${reqId}.json`, {
+            method: 'DELETE'
+          });
+        } catch (e) {}
+      }
+
+      delete pendingRequestsCache[reqId];
+      renderTeamAccountsList();
+      renderPendingRequestsList();
+      alert(`Approved "${req.fullName}"! They can now log in with password "${passVal}".`);
+    }
+
+    async function rejectPendingRequest(reqId) {
+      const req = pendingRequestsCache[reqId];
+      if (!req) return;
+      if (!confirm(`Reject and remove pending request from ${req.fullName}?`)) return;
+
+      const pendingEndpoint = getPendingEndpoint();
+      if (pendingEndpoint) {
+        try {
+          await fetch(`${pendingEndpoint.replace('.json', '')}/${reqId}.json`, {
+            method: 'DELETE'
+          });
+        } catch (e) {}
+      }
+
+      delete pendingRequestsCache[reqId];
+      renderPendingRequestsList();
+    }
+
+    function renderPendingRequestsList() {
+      if (!isCurrentUserAdmin()) return;
+      const listEl = document.getElementById('pendingRequestsList');
+      const countBadge = document.getElementById('pendingCountBadge');
+      if (!listEl) return;
+
+      const items = Object.entries(pendingRequestsCache || {}).filter(([, r]) => r && typeof r === 'object');
+      if (countBadge) {
+        countBadge.textContent = String(items.length);
+      }
+
+      if (items.length === 0) {
+        listEl.innerHTML = `<p class="text-xs text-slate-500">No pending requests.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map(([id, r]) => `
+        <div class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-extrabold text-slate-900">${escapeHtml(r.fullName || '')}</span>
+            <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">${escapeHtml(r.username || '')}</span>
+          </div>
+          <p class="text-[11px] text-slate-600">📞 ${escapeHtml(r.phone || '')} • ✉️ ${escapeHtml(r.email || '')}</p>
+          <p class="text-[11px] text-slate-500">🔑 Password: <span class="font-mono font-bold text-slate-800">${escapeHtml(r.password || '')}</span></p>
+          <div class="flex gap-2 pt-1">
+            <button type="button" data-approve-req="${escapeHtml(id)}" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
+              Approve
+            </button>
+            <button type="button" data-reject-req="${escapeHtml(id)}" class="py-1.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px]">
+              Reject
+            </button>
+          </div>
+        </div>
+      `).join('');
     }
 
     function getAllUserAccounts() {
+      const adminPass = getAdminPasscode();
       const merged = {
-        [ADMIN_PASSCODE]: ADMIN_NAME
+        [adminPass]: ADMIN_NAME
       };
       const custom = getCustomAccountsOnly();
       for (const [pass, name] of Object.entries(custom)) {
         const p = String(pass).trim();
         const n = String(name).trim();
-        if (p && n && p !== ADMIN_PASSCODE) {
+        if (p && n && p !== adminPass) {
           merged[p] = n;
         }
       }
@@ -914,6 +1207,7 @@
       const listEl = document.getElementById('teamAccountsList');
       if (!listEl) return;
 
+      const adminPass = getAdminPasscode();
       const custom = getCustomAccountsOnly();
       const entries = Object.entries(custom);
 
@@ -922,7 +1216,7 @@
           <div>
             <span class="font-bold text-slate-800">${escapeHtml(ADMIN_NAME)}</span>
             <span class="text-slate-400 mx-1">•</span>
-            <span class="font-mono text-slate-600">${escapeHtml(ADMIN_PASSCODE)}</span>
+            <span class="font-mono text-slate-600">${escapeHtml(adminPass)}</span>
           </div>
           <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">Admin</span>
         </div>
@@ -1030,7 +1324,7 @@
       syncAdminSectionVisibility();
     }
 
-    function checkAppPassword() {
+    async function checkAppPassword() {
       const inputEl = document.getElementById('appPassword');
       const err = document.getElementById('errorMsg');
       const warnBox = document.getElementById('securityWarningBox');
@@ -1039,11 +1333,13 @@
 
       try {
         const entered = ((inputEl && inputEl.value) || '').trim();
+        await pullCloudAccountsIfConfigured();
+        const adminPass = getAdminPasscode();
         const accounts = getAllUserAccounts();
         const matchedName = Object.prototype.hasOwnProperty.call(accounts, entered) ? accounts[entered] : null;
 
         if (matchedName) {
-          const isAdminLogin = entered === ADMIN_PASSCODE;
+          const isAdminLogin = entered === adminPass;
           localStorage.setItem('sk_app_unlocked', 'true');
           localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
           localStorage.setItem(UNLOCKED_USER_KEY, matchedName);
@@ -1107,6 +1403,13 @@
       const unlockBtn = document.getElementById('unlockAppBtn');
       const passInput = document.getElementById('appPassword');
       const splash = document.getElementById('welcomeSplashOverlay');
+      const openSignupBtn = document.getElementById('openSignupModalBtn');
+      const closeSignupBtn = document.getElementById('closeSignupModalBtn');
+      const cancelSignupBtn = document.getElementById('cancelSignupBtn');
+      const signupModal = document.getElementById('signupModal');
+      const guestSignupForm = document.getElementById('guestSignupForm');
+      const changeAdminPassForm = document.getElementById('changeAdminPassForm');
+      const pendingListEl = document.getElementById('pendingRequestsList');
       const addAccountForm = document.getElementById('addTeamAccountForm');
       const accountsListEl = document.getElementById('teamAccountsList');
       const enableNotifBtn = document.getElementById('enableNotifBtn');
@@ -1123,6 +1426,85 @@
           }
         });
       }
+      if (openSignupBtn && signupModal) {
+        openSignupBtn.addEventListener('click', () => {
+          document.getElementById('signupStatusMsg').textContent = '';
+          document.getElementById('signupStatusMsg').className = 'text-xs font-bold min-h-[18px]';
+          signupModal.classList.remove('hidden');
+        });
+      }
+      const closeSignup = () => {
+        if (signupModal) signupModal.classList.add('hidden');
+      };
+      if (closeSignupBtn) closeSignupBtn.addEventListener('click', closeSignup);
+      if (cancelSignupBtn) cancelSignupBtn.addEventListener('click', closeSignup);
+
+      if (guestSignupForm) {
+        guestSignupForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const statusEl = document.getElementById('signupStatusMsg');
+          const submitBtn = document.getElementById('submitSignupBtn');
+          const fullName = document.getElementById('signupFullName').value.trim();
+          const phone = document.getElementById('signupPhone').value.trim();
+          const email = document.getElementById('signupEmail').value.trim();
+          const username = document.getElementById('signupUsername').value.trim();
+          const password = document.getElementById('signupPassword').value.trim();
+
+          if (!fullName || !phone || !email || !username || !password) return;
+
+          if (password === getAdminPasscode()) {
+            statusEl.textContent = 'This password cannot be used.';
+            statusEl.className = 'text-xs font-bold text-rose-600 min-h-[18px]';
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Sending...';
+          try {
+            await submitGuestSignupRequest({ fullName, phone, email, username, password });
+            guestSignupForm.reset();
+            statusEl.textContent = 'Request sent! Waiting for Admin approval.';
+            statusEl.className = 'text-xs font-bold text-emerald-700 min-h-[18px]';
+          } catch (err) {
+            statusEl.textContent = err.message || 'Could not send request.';
+            statusEl.className = 'text-xs font-bold text-rose-600 min-h-[18px]';
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Pending Request';
+          }
+        });
+      }
+
+      if (changeAdminPassForm) {
+        changeAdminPassForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!isCurrentUserAdmin()) return;
+          const input = document.getElementById('newAdminPassInput');
+          const newPass = (input.value || '').trim();
+          if (!newPass) return;
+
+          await updateAdminPasscode(newPass);
+          input.value = '';
+          renderTeamAccountsList();
+          alert(`Admin password updated to "${newPass}"!`);
+        });
+      }
+
+      if (pendingListEl) {
+        pendingListEl.addEventListener('click', async (e) => {
+          if (!isCurrentUserAdmin()) return;
+          const approveBtn = e.target.closest('button[data-approve-req]');
+          if (approveBtn) {
+            await approvePendingRequest(approveBtn.dataset.approveReq);
+            return;
+          }
+          const rejectBtn = e.target.closest('button[data-reject-req]');
+          if (rejectBtn) {
+            await rejectPendingRequest(rejectBtn.dataset.rejectReq);
+          }
+        });
+      }
+
       if (splash) {
         splash.addEventListener('click', hideWelcomeSplashImmediately);
       }
@@ -1133,7 +1515,7 @@
         testNotifBtn.addEventListener('click', () => triggerShiftReminderNotification(true));
       }
       if (addAccountForm) {
-        addAccountForm.addEventListener('submit', (e) => {
+        addAccountForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           if (!isCurrentUserAdmin()) {
             alert('Only Admin can add team passwords.');
@@ -1145,30 +1527,30 @@
           const passVal = (passInputNew.value || '').trim();
           if (!nameVal || !passVal) return;
 
-          if (passVal === ADMIN_PASSCODE) {
+          if (passVal === getAdminPasscode()) {
             alert('Cannot overwrite Admin password.');
             return;
           }
 
           const custom = getCustomAccountsOnly();
           custom[passVal] = nameVal;
-          saveCustomAccountsOnly(custom);
+          await saveCustomAccountsOnly(custom);
 
           nameInput.value = '';
           passInputNew.value = '';
           renderTeamAccountsList();
-          alert(`Added "${nameVal}" with password "${passVal}"`);
+          alert(`Added "${nameVal}" with password "${passVal}" & synced to Firebase`);
         });
       }
       if (accountsListEl) {
-        accountsListEl.addEventListener('click', (e) => {
+        accountsListEl.addEventListener('click', async (e) => {
           if (!isCurrentUserAdmin()) return;
           const btn = e.target.closest('button[data-delete-pass]');
           if (!btn) return;
           const passKey = decodeURIComponent(btn.dataset.deletePass);
           const custom = getCustomAccountsOnly();
           delete custom[passKey];
-          saveCustomAccountsOnly(custom);
+          await saveCustomAccountsOnly(custom);
           renderTeamAccountsList();
         });
       }
@@ -1694,11 +2076,13 @@
       });
 
       document.getElementById('openToolsBtn').addEventListener('click', () => {
+        pullCloudAccountsIfConfigured();
         syncAdminSectionVisibility();
         updateNotificationStatusBadge();
         document.getElementById('toolsModal').classList.remove('hidden');
       });
       document.getElementById('openAboutFooterBtn').addEventListener('click', () => {
+        pullCloudAccountsIfConfigured();
         syncAdminSectionVisibility();
         updateNotificationStatusBadge();
         document.getElementById('toolsModal').classList.remove('hidden');
