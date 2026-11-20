@@ -168,12 +168,6 @@
       margin-bottom: 14px;
     }
 
-    .masked-pass-input {
-      -webkit-text-security: disc;
-      text-security: disc;
-      letter-spacing: 0.15em;
-    }
-
     .input-group input:focus {
       border-color: #0056b3;
     }
@@ -247,15 +241,9 @@
 
       <div class="input-group">
         <input
-          type="text"
+          type="password"
           id="appPassword"
-          name="sk_unlock_field"
-          class="masked-pass-input"
           placeholder="Enter Password"
-          autocomplete="new-password"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
           onkeydown="handleEnterPassword(event)"
         />
       </div>
@@ -521,22 +509,7 @@
   <script>
     const AUTO_LOCK_MS = 18 * 60 * 60 * 1000;
     const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
-    let PASSCODE_HASH = null;
-
-    async function sha256Hex(text) {
-      const data = new TextEncoder().encode(text);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    }
-
-    async function getPasscodeHash() {
-      if (!PASSCODE_HASH) {
-        PASSCODE_HASH = await sha256Hex("SKFZE2026");
-      }
-      return PASSCODE_HASH;
-    }
+    const EXPECTED_PASSCODE = 'SKFZE2026';
 
     function isSessionExpired() {
       const unlockedAt = Number(localStorage.getItem(UNLOCKED_AT_KEY) || '0');
@@ -565,7 +538,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      getPasscodeHash();
       syncLockState();
     });
 
@@ -582,16 +554,14 @@
       }
     }
 
-    async function checkAppPassword() {
+    function checkAppPassword() {
       const inputEl = document.getElementById('appPassword');
-      const entered = inputEl.value.trim();
+      const entered = (inputEl.value || '').trim();
       const err = document.getElementById('errorMsg');
       const warnBox = document.getElementById('securityWarningBox');
       const metaText = document.getElementById('deviceMetaText');
-      const expectedHash = await getPasscodeHash();
-      const enteredHash = await sha256Hex(entered);
 
-      if (enteredHash === expectedHash) {
+      if (entered === EXPECTED_PASSCODE) {
         localStorage.setItem('sk_app_unlocked', 'true');
         localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
         document.getElementById('loginOverlay').style.display = 'none';
@@ -934,4 +904,210 @@
         document.getElementById('editModalError').textContent = '';
       }
 
-      document.getElementById('recordsList').addEventListener('click
+      document.getElementById('recordsList').addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-record-action]');
+        if (!button) return;
+
+        const recordId = button.dataset.recordId;
+        const record = appState.records.find(item => String(item.id) === recordId);
+
+        if (!record) {
+          showToast('Record not found.');
+          return;
+        }
+
+        if (button.dataset.recordAction === 'delete') {
+          if (!confirm(`Delete the record for ${record.dateStr}?`)) return;
+          appState.records = appState.records.filter(item => String(item.id) !== recordId);
+          saveData();
+          renderUI();
+          showToast('Record deleted.');
+          return;
+        }
+
+        if (button.dataset.recordAction === 'edit') {
+          openEditRecordModal(record);
+        }
+      });
+
+      document.getElementById('editRecordForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const recordId = document.getElementById('editRecordId').value;
+        const newDate = document.getElementById('editDateInput').value;
+        const newInTime = document.getElementById('editInInput').value;
+        const newOutTime = document.getElementById('editOutInput').value;
+        const errEl = document.getElementById('editModalError');
+
+        const record = appState.records.find(item => String(item.id) === recordId);
+        if (!record) {
+          errEl.textContent = 'Record not found.';
+          return;
+        }
+
+        const inTimestamp = Date.parse(`${newDate}T${newInTime}:00+04:00`);
+        const outTimestamp = Date.parse(`${newDate}T${newOutTime}:00+04:00`);
+
+        if (!Number.isFinite(inTimestamp) || !Number.isFinite(outTimestamp) || outTimestamp <= inTimestamp) {
+          errEl.textContent = 'OUT time must be later than IN time.';
+          return;
+        }
+
+        const newId = `${newDate}_${inTimestamp}`;
+        if (appState.records.some(item => item !== record && String(item.id) === newId)) {
+          errEl.textContent = 'Another record already exists at this date and time.';
+          return;
+        }
+
+        record.dateStr = newDate;
+        record.inTimestamp = inTimestamp;
+        record.outTimestamp = outTimestamp;
+        record.otMinutes = calculateOtMinutes(inTimestamp, outTimestamp);
+        record.id = newId;
+
+        selectedMonthStr = newDate.slice(0, 7);
+        saveData();
+        closeEditRecordModal();
+        renderUI();
+        showToast('Attendance updated & OT recalculated!');
+      });
+
+      document.getElementById('closeEditModalBtn').addEventListener('click', closeEditRecordModal);
+      document.getElementById('cancelEditRecordBtn').addEventListener('click', closeEditRecordModal);
+      document.getElementById('editRecordModal').addEventListener('click', (e) => {
+        if (e.target.id === 'editRecordModal') closeEditRecordModal();
+      });
+
+      function getSelectedMonthRecordsAsc() {
+        return appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => a.inTimestamp - b.inTimestamp);
+      }
+
+      function exportMonthlyPdf() {
+        const records = getSelectedMonthRecordsAsc();
+        if (records.length === 0) {
+          showToast('No records in this month to export.');
+          return;
+        }
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          const monthTitle = formatMonthTitle(selectedMonthStr);
+          doc.setFontSize(18);
+          doc.text('Smart Kitchens FZE - Overtime Report', 14, 20);
+          doc.setFontSize(11);
+          doc.text(`Period: ${monthTitle}  |  UAE Time`, 14, 28);
+
+          const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+          const rows = records.map(r => [r.dateStr, formatUaeTime(r.inTimestamp), formatUaeTime(r.outTimestamp), formatHoursMinutes(r.otMinutes), `${r.otMinutes} mins`]);
+
+          doc.autoTable({
+            startY: 35,
+            head: [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'OT Minutes']],
+            body: rows,
+            theme: 'grid',
+            foot: [['MONTHLY OT TOTAL', '', '', formatHoursMinutes(totalMins), `${totalMins} mins`]]
+          });
+
+          doc.save(`SmartKitchens_OT_${selectedMonthStr}.pdf`);
+          showToast('PDF Report downloaded!');
+        } catch (err) {
+          showToast('Error generating PDF.');
+        }
+      }
+
+      function exportMonthlyCsv() {
+        const records = getSelectedMonthRecordsAsc();
+        if (records.length === 0) {
+          showToast('No records to export.');
+          return;
+        }
+        const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+        const lines = [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'Total Mins'].join(',')];
+        for (const r of records) {
+          lines.push([r.dateStr, `"${formatUaeTime(r.inTimestamp)}"`, `"${formatUaeTime(r.outTimestamp)}"`, `"${formatHoursMinutes(r.otMinutes)}"`, r.otMinutes].join(','));
+        }
+        lines.push(['MONTHLY TOTAL', '', '', `"${formatHoursMinutes(totalMins)}"`, totalMins].join(','));
+        triggerDownload(new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' }), `SmartKitchens_OT_${selectedMonthStr}.csv`);
+        showToast('CSV downloaded!');
+      }
+
+      function backupJsonData() {
+        const blob = new Blob([JSON.stringify({ app: 'Smart Kitchens FZE OT Tracker', data: appState }, null, 2)], { type: 'application/json' });
+        triggerDownload(blob, `SmartKitchens_Backup.json`);
+        showToast('Backup saved!');
+      }
+
+      function restoreJsonData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            const restored = parsed.data ? parsed.data : parsed;
+            appState.records = restored.records || [];
+            appState.activeSession = restored.activeSession || null;
+            saveData();
+            renderUI();
+            showToast('Restored successfully!');
+          } catch (err) {
+            showToast('Invalid backup file.');
+          } finally {
+            e.target.value = '';
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function showToast(msg) {
+        const box = document.getElementById('toastBox');
+        document.getElementById('toastMessage').textContent = msg;
+        box.classList.remove('hidden');
+        setTimeout(() => box.classList.add('hidden'), 3500);
+      }
+
+      window.hideToast = () => document.getElementById('toastBox').classList.add('hidden');
+
+      document.getElementById('punchBtn').addEventListener('click', handlePunchTap);
+      document.getElementById('undoBtn').addEventListener('click', undoLastPunch);
+      document.getElementById('lockAppBtn').addEventListener('click', () => lockApp(false));
+      document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        const [y, m] = selectedMonthStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 2, 15));
+        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+        renderUI();
+      });
+      document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        const [y, m] = selectedMonthStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m, 15));
+        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+        renderUI();
+      });
+
+      document.getElementById('openToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
+      document.getElementById('openAboutFooterBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
+      document.getElementById('closeToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.add('hidden'));
+      document.getElementById('exportPdfBtn').addEventListener('click', exportMonthlyPdf);
+      document.getElementById('exportCsvBtn').addEventListener('click', exportMonthlyCsv);
+      document.getElementById('backupJsonBtn').addEventListener('click', backupJsonData);
+      document.getElementById('restoreJsonInput').addEventListener('change', restoreJsonData);
+
+      loadData();
+      renderUI();
+      renderClockAndSchedule();
+      setInterval(renderClockAndSchedule, 1000);
+      setInterval(syncLockState, 10000);
+    })();
+  </script>
+</body>
+</html>
