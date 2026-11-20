@@ -43,21 +43,50 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(135deg, #f4f7f6 0%, #e2e8f0 100%);
+      background: linear-gradient(180deg, #eef4ff 0%, #f4f7f6 50%, #e2e8f0 100%);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 99999;
       padding: 18px;
       box-sizing: border-box;
-      overflow-y: auto;
+      overflow: hidden;
+    }
+
+    /* Background Cartoon People Layer (Top & Bottom Empty Spaces) */
+    .bg-people-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .bg-people-top {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 100%;
+      height: 120px;
+      opacity: 0.92;
+    }
+
+    .bg-people-bottom {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      width: 100%;
+      height: 130px;
+      opacity: 0.95;
     }
 
     .login-card {
-      background: #ffffff;
+      position: relative;
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.97);
       padding: 24px 20px;
       border-radius: 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
       text-align: center;
       width: 100%;
       max-width: 370px;
@@ -81,7 +110,7 @@
     .mini-cartoon-stage {
       margin: 2px auto 10px auto;
       max-width: 240px;
-      height: 102px;
+      height: 96px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -110,6 +139,82 @@
     @keyframes blinkSoft {
       0%, 92%, 100% { transform: scaleY(1); }
       96% { transform: scaleY(0.1); }
+    }
+
+    /* Walking & Bobbing Cartoon People Animations */
+    @keyframes walkRight {
+      0% { transform: translateX(-110px); }
+      100% { transform: translateX(calc(100vw + 110px)); }
+    }
+
+    @keyframes walkLeft {
+      0% { transform: translateX(calc(100vw + 110px)); }
+      100% { transform: translateX(-110px); }
+    }
+
+    @keyframes stepBob {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+
+    @keyframes legSwingA {
+      0%, 100% { transform: rotate(-18deg); }
+      50% { transform: rotate(18deg); }
+    }
+
+    @keyframes legSwingB {
+      0%, 100% { transform: rotate(18deg); }
+      50% { transform: rotate(-18deg); }
+    }
+
+    @keyframes armSwingA {
+      0%, 100% { transform: rotate(16deg); }
+      50% { transform: rotate(-16deg); }
+    }
+
+    @keyframes armSwingB {
+      0%, 100% { transform: rotate(-16deg); }
+      50% { transform: rotate(16deg); }
+    }
+
+    .walk-track-right {
+      animation: walkRight 16s linear infinite;
+    }
+
+    .walk-track-right-slow {
+      animation: walkRight 21s linear -7s infinite;
+    }
+
+    .walk-track-left {
+      animation: walkLeft 18s linear -4s infinite;
+    }
+
+    .person-bob {
+      animation: stepBob 0.55s ease-in-out infinite;
+    }
+
+    .leg-a {
+      transform-box: fill-box;
+      transform-origin: top center;
+      animation: legSwingA 0.55s ease-in-out infinite;
+    }
+
+    .leg-b {
+      transform-box: fill-box;
+      transform-origin: top center;
+      animation: legSwingB 0.55s ease-in-out infinite;
+    }
+
+    .arm-a {
+      transform-box: fill-box;
+      transform-origin: top center;
+      animation: armSwingA 0.55s ease-in-out infinite;
+    }
+
+    .arm-b {
+      transform-box: fill-box;
+      transform-origin: top center;
+      animation: armSwingB 0.55s ease-in-out infinite;
     }
 
     .cartoon-float {
@@ -208,13 +313,78 @@
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col items-center">
 
   <div id="loginOverlay">
+    <!-- Top & Bottom Cartoon People Background -->
+    <div class="bg-people-layer" aria-hidden="true">
+      <!-- Top Empty Area: Walking Technician with Cap -->
+      <div class="bg-people-top">
+        <svg viewBox="0 0 120 110" width="90" height="82" class="walk-track-right">
+          <ellipse cx="60" cy="100" rx="22" ry="4.5" fill="#cbd5e1" />
+          <g class="person-bob">
+            <!-- Back Arm -->
+            <line x1="60" y1="50" x2="52" y2="68" stroke="#1e3a8a" stroke-width="5" stroke-linecap="round" class="arm-b" />
+            <!-- Back Leg -->
+            <line x1="58" y1="72" x2="51" y2="96" stroke="#334155" stroke-width="5.5" stroke-linecap="round" class="leg-b" />
+            <!-- Front Leg -->
+            <line x1="62" y1="72" x2="69" y2="96" stroke="#0f172a" stroke-width="5.5" stroke-linecap="round" class="leg-a" />
+            <!-- Torso (Blue Work Shirt) -->
+            <rect x="52" y="45" width="16" height="28" rx="7" fill="#2563eb" />
+            <!-- Head -->
+            <circle cx="60" cy="33" r="10.5" fill="#fcd34d" />
+            <!-- Eye & Smile -->
+            <circle cx="64" cy="32" r="1.5" fill="#0f172a" />
+            <path d="M62 37 Q65 39 67 37" fill="none" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" />
+            <!-- Cap -->
+            <path d="M49 30 Q60 19 71 30 Z" fill="#0284c7" />
+            <rect x="61" y="28" width="14" height="3.5" rx="1.75" fill="#0369a1" />
+            <!-- Front Arm -->
+            <line x1="60" y1="50" x2="70" y2="67" stroke="#3b82f6" stroke-width="5" stroke-linecap="round" class="arm-a" />
+          </g>
+        </svg>
+      </div>
+
+      <!-- Bottom Empty Area: Two Cartoon Workers Walking -->
+      <div class="bg-people-bottom">
+        <!-- Person 1 (Walking Right) -->
+        <svg viewBox="0 0 120 115" width="96" height="92" class="walk-track-right-slow" style="position:absolute; bottom:0;">
+          <ellipse cx="60" cy="105" rx="24" ry="5" fill="#cbd5e1" />
+          <g class="person-bob">
+            <line x1="60" y1="52" x2="50" y2="70" stroke="#047857" stroke-width="5" stroke-linecap="round" class="arm-b" />
+            <line x1="58" y1="75" x2="50" y2="101" stroke="#334155" stroke-width="5.5" stroke-linecap="round" class="leg-b" />
+            <line x1="62" y1="75" x2="70" y2="101" stroke="#0f172a" stroke-width="5.5" stroke-linecap="round" class="leg-a" />
+            <rect x="52" y="47" width="16" height="29" rx="7" fill="#10b981" />
+            <circle cx="60" cy="34" r="10.5" fill="#fde68a" />
+            <circle cx="64" cy="33" r="1.5" fill="#0f172a" />
+            <path d="M62 38 Q65 40 67 38" fill="none" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M50 31 Q60 21 70 31 Z" fill="#059669" />
+            <line x1="60" y1="52" x2="71" y2="69" stroke="#34d399" stroke-width="5" stroke-linecap="round" class="arm-a" />
+          </g>
+        </svg>
+
+        <!-- Person 2 (Walking Left) -->
+        <svg viewBox="0 0 120 115" width="96" height="92" class="walk-track-left" style="position:absolute; bottom:4px;">
+          <ellipse cx="60" cy="105" rx="24" ry="5" fill="#cbd5e1" />
+          <g class="person-bob">
+            <line x1="60" y1="52" x2="70" y2="70" stroke="#b45309" stroke-width="5" stroke-linecap="round" class="arm-b" />
+            <line x1="62" y1="75" x2="70" y2="101" stroke="#334155" stroke-width="5.5" stroke-linecap="round" class="leg-b" />
+            <line x1="58" y1="75" x2="50" y2="101" stroke="#0f172a" stroke-width="5.5" stroke-linecap="round" class="leg-a" />
+            <rect x="52" y="47" width="16" height="29" rx="7" fill="#f59e0b" />
+            <circle cx="60" cy="34" r="10.5" fill="#fcd34d" />
+            <circle cx="56" cy="33" r="1.5" fill="#0f172a" />
+            <path d="M53 38 Q55 40 58 38" fill="none" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M50 31 Q60 21 70 31 Z" fill="#d97706" />
+            <line x1="60" y1="52" x2="49" y2="69" stroke="#fbbf24" stroke-width="5" stroke-linecap="round" class="arm-a" />
+          </g>
+        </svg>
+      </div>
+    </div>
+
     <div class="login-card">
       <div class="logo-container">
         <img src="logo.png" alt="Smart Kitchens FZE Logo" class="company-logo">
       </div>
 
       <div class="mini-cartoon-stage" aria-hidden="true">
-        <svg viewBox="0 0 240 105" class="w-full h-[102px] mx-auto overflow-visible">
+        <svg viewBox="0 0 240 105" class="w-full h-[96px] mx-auto overflow-visible">
           <ellipse cx="120" cy="96" rx="76" ry="6" fill="#e2e8f0" />
           <g class="cartoon-float">
             <circle cx="120" cy="48" r="28" fill="#eff6ff" stroke="#1d4ed8" stroke-width="3" />
@@ -282,832 +452,4 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label for="editInInput" class="block text-xs font-bold text-slate-700 mb-1">IN Time</label>
-            <input id="editInInput" type="time" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
-          </div>
-          <div>
-            <label for="editOutInput" class="block text-xs font-bold text-slate-700 mb-1">OUT Time</label>
-            <input id="editOutInput" type="time" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600" />
-          </div>
-        </div>
-        <p id="editModalError" class="text-xs font-semibold text-rose-600 min-h-[16px]"></p>
-        <div class="flex items-center gap-2 pt-1">
-          <button type="submit" class="flex-1 py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold active:scale-[0.99] transition">
-            Save &amp; Recalculate OT
-          </button>
-          <button id="cancelEditRecordBtn" type="button" class="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold active:scale-[0.99] transition">
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="w-full max-w-md min-h-screen bg-slate-50 shadow-xl flex flex-col justify-between relative overflow-x-hidden">
-
-    <header class="bg-slate-900 text-white pt-5 pb-6 px-5 rounded-b-3xl shadow-md">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">UAE Time (Asia/Dubai)</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="installBtn" class="hidden text-xs bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-1.5 rounded-full transition active:scale-95">
-            + Install App
-          </button>
-          <button id="lockAppBtn" type="button" aria-label="Lock App" class="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 font-semibold px-3 py-1.5 rounded-full transition active:scale-95">
-            Lock
-          </button>
-          <button id="openToolsBtn" aria-label="Menu, Export, and Developer Info" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-1.5 rounded-full transition active:scale-95 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            Menu
-          </button>
-        </div>
-      </div>
-
-      <div class="text-center mt-1">
-        <p id="liveDate" class="text-sm font-medium text-slate-300">Loading date...</p>
-        <div id="liveClock" class="text-4xl sm:text-5xl font-extrabold tracking-tight mt-1 tabular-nums text-white">
-          --:--:--
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1.5">Duty: Mon–Sat • 8:00 AM – 6:00 PM (OT after 6:00 PM)</p>
-      </div>
-    </header>
-
-    <main class="flex-1 px-4 pt-5 pb-8 space-y-5">
-
-      <div id="toastBox" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3 transition-all">
-        <span id="toastMessage">Action saved</span>
-        <button onclick="hideToast()" class="text-slate-400 hover:text-white text-xs font-bold px-2 py-1">✕</button>
-      </div>
-
-      <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 text-center">
-
-        <div id="weeklyOffView" class="hidden py-6">
-          <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
-            <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-          <span class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold tracking-wider uppercase mb-2">Sunday Holiday</span>
-          <h2 class="text-3xl font-black text-slate-800 tracking-tight">WEEKLY OFF</h2>
-          <p class="text-sm text-slate-500 mt-1.5">Enjoy your rest day. Attendance resumes Monday at 8:00 AM.</p>
-        </div>
-
-        <div id="workDayView">
-          <div id="statusBadge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4">
-            <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
-            <span id="statusText">Not Clocked In</span>
-          </div>
-
-          <div class="relative flex justify-center">
-            <button
-              id="punchBtn"
-              type="button"
-              class="w-full h-32 rounded-3xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-lg shadow-emerald-600/25 transition-all duration-150 flex flex-col items-center justify-center cursor-pointer focus:outline-none"
-            >
-              <span id="punchBtnLabel" class="text-4xl font-black tracking-wider">IN</span>
-              <span id="punchBtnSub" class="text-xs font-medium text-emerald-100 mt-1">Tap to start duty</span>
-            </button>
-          </div>
-
-          <div id="activeSessionBar" class="hidden mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-sm">
-            <div class="text-left">
-              <span class="text-xs text-slate-400 block">Current IN Time</span>
-              <span id="currentInDisplay" class="font-bold text-slate-800 text-base">--:-- --</span>
-            </div>
-            <div class="text-right">
-              <span class="text-xs text-slate-400 block">Live Running OT</span>
-              <span id="liveOtDisplay" class="font-bold text-emerald-600 text-base">0h 0m</span>
-            </div>
-          </div>
-
-          <div id="undoBar" class="hidden mt-3 pt-2.5 border-t border-dashed border-slate-200 flex items-center justify-between">
-            <span id="undoPrompt" class="text-xs text-slate-500">Recorded just now</span>
-            <button id="undoBtn" type="button" class="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl active:scale-95">
-              Undo Last Tap
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-2 gap-3.5">
-        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200/80 flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">TODAY OT</span>
-            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-          </div>
-          <div class="mt-2">
-            <p id="todayOtText" class="text-2xl font-black text-slate-900 tracking-tight">0h 0m</p>
-            <p id="todayOtMinsSub" class="text-xs font-medium text-slate-500 mt-0.5">0 total mins</p>
-          </div>
-        </div>
-
-        <div class="bg-slate-900 text-white rounded-3xl p-4 shadow-md flex flex-col justify-between">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">MONTHLY OT</span>
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          </div>
-          <div class="mt-2">
-            <p id="monthlyOtText" class="text-2xl font-black text-emerald-400 tracking-tight">0h 0m</p>
-            <p id="monthlyOtMinsSub" class="text-xs font-medium text-slate-300 mt-0.5">0 total mins</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200/80">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-          <button id="prevMonthBtn" aria-label="Previous Month" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <div class="text-center">
-            <h3 id="selectedMonthLabel" class="text-base font-extrabold text-slate-800">Month Year</h3>
-            <p id="selectedMonthSummary" class="text-xs font-medium text-slate-500">0 days with OT</p>
-          </div>
-
-          <button id="nextMonthBtn" aria-label="Next Month" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        <div id="recordsList" class="space-y-2.5 max-h-80 overflow-y-auto pr-0.5"></div>
-      </section>
-
-      <footer class="pt-1 pb-2 text-center">
-        <button id="openAboutFooterBtn" type="button" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white border border-slate-200/80 shadow-2xs text-xs text-slate-500 transition active:scale-95">
-          <img id="footerDevAvatar" src="1000044128.jpg" alt="Nipun" class="w-5 h-5 rounded-full object-cover object-top border border-slate-300" />
-          <span>Developed by <strong class="font-bold text-slate-800">Nipun</strong></span>
-          <span class="text-slate-300">•</span>
-          <span class="text-emerald-700 font-semibold underline underline-offset-2">Contact</span>
-        </button>
-      </footer>
-
-    </main>
-  </div>
-
-  <div id="toolsModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
-    <div id="toolsModalContent" class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-fade-in">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
-        <div>
-          <h3 class="text-lg font-extrabold text-slate-900">Menu &amp; Settings</h3>
-          <p id="modalMonthSubtitle" class="text-xs text-slate-500">Selected Month</p>
-        </div>
-        <button id="closeToolsBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
-      </div>
-
-      <div class="space-y-2.5">
-        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Export Monthly Report</p>
-        <button id="exportPdfBtn" class="w-full py-3.5 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition">
-          Download PDF Report
-        </button>
-        <button id="exportCsvBtn" class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition">
-          Download CSV (Excel)
-        </button>
-      </div>
-
-      <div class="space-y-2.5 pt-2 border-t border-slate-100">
-        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Phone Data Backup &amp; Restore</p>
-        <div class="grid grid-cols-2 gap-2.5">
-          <button id="backupJsonBtn" class="py-3 px-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-[0.99]">
-            Save Backup
-          </button>
-          <label class="py-3 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
-            Restore File
-            <input id="restoreJsonInput" type="file" accept=".json,application/json" class="hidden" />
-          </label>
-        </div>
-      </div>
-
-      <div id="aboutDeveloperSection" class="space-y-3 pt-3 border-t border-slate-100">
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-400">About &amp; Developer</p>
-        </div>
-
-        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-          <div class="flex items-center gap-3.5">
-            <img id="modalDevAvatar" src="1000044128.jpg" alt="Nipun" class="w-16 h-16 rounded-2xl object-cover object-top border-2 border-slate-900 shadow-sm shrink-0 bg-slate-200" />
-            <div>
-              <span class="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-0.5">Developer</span>
-              <h4 class="text-base font-extrabold text-slate-900 leading-tight">Nipun</h4>
-              <p class="text-xs font-medium text-slate-600 mt-0.5">Personal Overtime Tracker</p>
-            </div>
-          </div>
-          <div id="contactDisplayView" class="space-y-2 pt-1">
-            <div id="contactButtonsContainer" class="grid grid-cols-1 gap-2"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const AUTO_LOCK_MS = 18 * 60 * 60 * 1000;
-    const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
-    const EXPECTED_PASSCODE = 'SKFZE2026';
-
-    function isSessionExpired() {
-      const unlockedAt = Number(localStorage.getItem(UNLOCKED_AT_KEY) || '0');
-      if (!unlockedAt) return true;
-      return (Date.now() - unlockedAt) >= AUTO_LOCK_MS;
-    }
-
-    function syncLockState() {
-      const isUnlocked = localStorage.getItem('sk_app_unlocked') === 'true';
-      const overlay = document.getElementById('loginOverlay');
-      if (!isUnlocked || isSessionExpired()) {
-        if (overlay.style.display !== 'flex') {
-          const wasExpired = isUnlocked && isSessionExpired();
-          localStorage.removeItem('sk_app_unlocked');
-          localStorage.removeItem(UNLOCKED_AT_KEY);
-          document.getElementById('errorMsg').innerText = wasExpired
-            ? "Session expired after 18 hours. Please unlock again."
-            : "";
-          const warnBox = document.getElementById('securityWarningBox');
-          if (warnBox) warnBox.classList.add('hidden');
-          overlay.style.display = 'flex';
-        }
-      } else {
-        overlay.style.display = 'none';
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      syncLockState();
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        syncLockState();
-      }
-    });
-
-    function handleEnterPassword(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        checkAppPassword();
-      }
-    }
-
-    function checkAppPassword() {
-      const inputEl = document.getElementById('appPassword');
-      const entered = (inputEl.value || '').trim();
-      const err = document.getElementById('errorMsg');
-      const warnBox = document.getElementById('securityWarningBox');
-      const metaText = document.getElementById('deviceMetaText');
-
-      if (entered === EXPECTED_PASSCODE) {
-        localStorage.setItem('sk_app_unlocked', 'true');
-        localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
-        document.getElementById('loginOverlay').style.display = 'none';
-        inputEl.value = "";
-        err.innerText = "";
-        if (warnBox) warnBox.classList.add('hidden');
-      } else {
-        err.innerText = "Access Denied! Invalid Password.";
-        inputEl.value = "";
-
-        if (warnBox) {
-          warnBox.classList.remove('hidden');
-          const nowStr = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dubai' });
-          const platform = navigator.platform || 'Unknown Device';
-          const lang = navigator.language || 'en';
-          if (metaText) {
-            metaText.textContent = `Logged: ${nowStr} (UAE) • Device: ${platform} (${lang})`;
-          }
-        }
-      }
-    }
-
-    function lockApp(expired = false) {
-      localStorage.removeItem('sk_app_unlocked');
-      localStorage.removeItem(UNLOCKED_AT_KEY);
-      const inputEl = document.getElementById('appPassword');
-      if (inputEl) inputEl.value = "";
-      document.getElementById('errorMsg').innerText = expired ? "Session expired after 18 hours. Please unlock again." : "";
-      const warnBox = document.getElementById('securityWarningBox');
-      if (warnBox) warnBox.classList.add('hidden');
-      document.getElementById('loginOverlay').style.display = 'flex';
-    }
-
-    (function () {
-      'use strict';
-
-      const STORAGE_KEY = 'uae_personal_ot_tracker_v1';
-      const TIMEZONE = 'Asia/Dubai';
-      const OT_START_HOUR = 18;
-      const OT_START_MINUTE = 0;
-
-      const DEFAULT_DEV_CONTACT = {
-        name: 'Nipun',
-        phone: '+971562284001',
-        email: 'nipunkitchentec@gmail.com',
-        photo: '1000044128.jpg'
-      };
-
-      let appState = { activeSession: null, records: [] };
-      let selectedMonthStr = '';
-      let lastTapTimestamp = 0;
-      let lastActionBackup = null;
-      let undoTimer = null;
-
-      function getUaeParts(dateObj = new Date()) {
-        const formatter = new Intl.DateTimeFormat('en-CA', {
-          timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, weekday: 'short'
-        });
-        const parts = formatter.formatToParts(dateObj);
-        const map = {};
-        for (const p of parts) { map[p.type] = p.value; }
-        const hour = map.hour === '24' ? 0 : parseInt(map.hour, 10);
-        return {
-          year: map.year, month: map.month, day: map.day,
-          dateStr: `${map.year}-${map.month}-${map.day}`,
-          monthStr: `${map.year}-${map.month}`,
-          weekday: map.weekday,
-          isSunday: map.weekday === 'Sun',
-          hour, minute: parseInt(map.minute, 10), second: parseInt(map.second, 10)
-        };
-      }
-
-      function formatUaeTime(timestamp) {
-        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(timestamp));
-      }
-
-      function formatUaeTime24(timestamp) {
-        return new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(timestamp));
-      }
-
-      function formatUaeClock(dateObj = new Date()) {
-        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).format(dateObj);
-      }
-
-      function formatUaeFullDate(dateObj = new Date()) {
-        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(dateObj);
-      }
-
-      function formatShortDate(dateStr) {
-        const [y, m, d] = dateStr.split('-').map(Number);
-        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(Date.UTC(y, m - 1, d, 12, 0, 0)));
-      }
-
-      function formatMonthTitle(monthStr) {
-        const [y, m] = monthStr.split('-').map(Number);
-        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, month: 'long', year: 'numeric' }).format(new Date(Date.UTC(y, m - 1, 15, 12, 0, 0)));
-      }
-
-      function calculateOtMinutes(inTimestamp, outTimestamp) {
-        if (!inTimestamp || !outTimestamp || outTimestamp <= inTimestamp) return 0;
-        const inParts = getUaeParts(new Date(inTimestamp));
-        if (inParts.isSunday) return 0;
-
-        const sixPmIso = `${inParts.dateStr}T${String(OT_START_HOUR).padStart(2, '0')}:${String(OT_START_MINUTE).padStart(2, '0')}:00+04:00`;
-        const sixPmTimestamp = new Date(sixPmIso).getTime();
-        const effectiveOtStart = Math.max(inTimestamp, sixPmTimestamp);
-
-        if (outTimestamp <= effectiveOtStart) return 0;
-        return Math.floor((outTimestamp - effectiveOtStart) / 60000);
-      }
-
-      function formatHoursMinutes(totalMinutes) {
-        const mins = Math.max(0, Math.floor(totalMinutes));
-        return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-      }
-
-      function loadData() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed && Array.isArray(parsed.records)) {
-              appState.records = parsed.records;
-              appState.activeSession = parsed.activeSession || null;
-            }
-          }
-        } catch (err) {}
-      }
-
-      function saveData() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); } catch (err) {}
-      }
-
-      function handlePunchTap() {
-        const now = Date.now();
-        if (now - lastTapTimestamp < 3000) return;
-        lastTapTimestamp = now;
-
-        const uaeNow = getUaeParts(new Date(now));
-        if (uaeNow.isSunday) {
-          showToast('Today is Sunday (WEEKLY OFF).');
-          return;
-        }
-
-        lastActionBackup = JSON.parse(JSON.stringify(appState));
-
-        if (!appState.activeSession) {
-          appState.activeSession = { dateStr: uaeNow.dateStr, inTimestamp: now };
-          saveData();
-          triggerUndoBanner(`Clocked IN at ${formatUaeTime(now)}`);
-          showToast(`IN recorded at ${formatUaeTime(now)}`);
-        } else {
-          const inTs = appState.activeSession.inTimestamp;
-          const dateStr = appState.activeSession.dateStr;
-          const otMinutes = calculateOtMinutes(inTs, now);
-
-          appState.records.unshift({ id: `${dateStr}_${inTs}`, dateStr, inTimestamp: inTs, outTimestamp: now, otMinutes });
-          appState.activeSession = null;
-          selectedMonthStr = dateStr.slice(0, 7);
-          saveData();
-          triggerUndoBanner(`Clocked OUT (${formatHoursMinutes(otMinutes)} OT)`);
-          showToast(`OUT recorded • OT: ${formatHoursMinutes(otMinutes)}`);
-        }
-        renderUI();
-      }
-
-      function triggerUndoBanner(label) {
-        const undoBar = document.getElementById('undoBar');
-        document.getElementById('undoPrompt').textContent = label;
-        undoBar.classList.remove('hidden');
-
-        if (undoTimer) clearTimeout(undoTimer);
-        undoTimer = setTimeout(() => {
-          undoBar.classList.add('hidden');
-          lastActionBackup = null;
-        }, 15000);
-      }
-
-      function undoLastPunch() {
-        if (!lastActionBackup) return;
-        appState = lastActionBackup;
-        lastActionBackup = null;
-        saveData();
-        document.getElementById('undoBar').classList.add('hidden');
-        if (undoTimer) clearTimeout(undoTimer);
-        showToast('Last punch undone.');
-        renderUI();
-      }
-
-      function renderClockAndSchedule() {
-        const now = new Date();
-        const uaeNow = getUaeParts(now);
-
-        document.getElementById('liveDate').textContent = formatUaeFullDate(now);
-        document.getElementById('liveClock').textContent = formatUaeClock(now);
-
-        if (uaeNow.isSunday && !appState.activeSession) {
-          document.getElementById('weeklyOffView').classList.remove('hidden');
-          document.getElementById('workDayView').classList.add('hidden');
-        } else {
-          document.getElementById('weeklyOffView').classList.add('hidden');
-          document.getElementById('workDayView').classList.remove('hidden');
-        }
-
-        if (appState.activeSession) {
-          document.getElementById('liveOtDisplay').textContent = formatHoursMinutes(calculateOtMinutes(appState.activeSession.inTimestamp, now.getTime()));
-          if (appState.activeSession.dateStr === uaeNow.dateStr) {
-            updateSummaryCards(uaeNow);
-          }
-        }
-      }
-
-      function updateSummaryCards(uaeNow) {
-        const nowTs = Date.now();
-        let todayMins = appState.records.filter(r => r.dateStr === uaeNow.dateStr).reduce((sum, r) => sum + (r.otMinutes || 0), 0);
-        if (appState.activeSession && appState.activeSession.dateStr === uaeNow.dateStr) {
-          todayMins += calculateOtMinutes(appState.activeSession.inTimestamp, nowTs);
-        }
-        document.getElementById('todayOtText').textContent = formatHoursMinutes(todayMins);
-        document.getElementById('todayOtMinsSub').textContent = `${todayMins} total mins`;
-
-        let monthMins = appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).reduce((sum, r) => sum + (r.otMinutes || 0), 0);
-        if (appState.activeSession && appState.activeSession.dateStr.startsWith(selectedMonthStr)) {
-          monthMins += calculateOtMinutes(appState.activeSession.inTimestamp, nowTs);
-        }
-        document.getElementById('monthlyOtText').textContent = formatHoursMinutes(monthMins);
-        document.getElementById('monthlyOtMinsSub').textContent = `${monthMins} total mins`;
-      }
-
-      function renderUI() {
-        const uaeNow = getUaeParts(new Date());
-        if (!selectedMonthStr) selectedMonthStr = uaeNow.monthStr;
-
-        const punchBtn = document.getElementById('punchBtn');
-        const punchBtnLabel = document.getElementById('punchBtnLabel');
-        const punchBtnSub = document.getElementById('punchBtnSub');
-        const statusBadge = document.getElementById('statusBadge');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const activeSessionBar = document.getElementById('activeSessionBar');
-
-        if (appState.activeSession) {
-          punchBtn.className = 'w-full h-32 rounded-3xl bg-rose-600 text-white shadow-lg flex flex-col items-center justify-center cursor-pointer pulse-ring';
-          punchBtnLabel.textContent = 'OUT';
-          punchBtnSub.textContent = 'Tap to finish duty & calculate OT';
-          statusBadge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-4';
-          statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
-          statusText.textContent = 'Currently Working';
-          activeSessionBar.classList.remove('hidden');
-          document.getElementById('currentInDisplay').textContent = formatUaeTime(appState.activeSession.inTimestamp);
-        } else {
-          punchBtn.className = 'w-full h-32 rounded-3xl bg-emerald-600 text-white shadow-lg flex flex-col items-center justify-center cursor-pointer';
-          punchBtnLabel.textContent = 'IN';
-          punchBtnSub.textContent = 'Tap to record arrival time';
-          statusBadge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4';
-          statusDot.className = 'w-2 h-2 rounded-full bg-slate-400';
-          statusText.textContent = 'Off Duty • Ready';
-          activeSessionBar.classList.add('hidden');
-        }
-
-        updateSummaryCards(uaeNow);
-        const monthTitle = formatMonthTitle(selectedMonthStr);
-        document.getElementById('selectedMonthLabel').textContent = monthTitle;
-        document.getElementById('modalMonthSubtitle').textContent = monthTitle;
-
-        const monthRecords = appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => b.inTimestamp - a.inTimestamp);
-        document.getElementById('selectedMonthSummary').textContent = `${monthRecords.length} shifts`;
-
-        const recordsList = document.getElementById('recordsList');
-        if (monthRecords.length === 0) {
-          recordsList.innerHTML = `<div class="text-center py-8"><p class="text-sm font-semibold text-slate-500">No records for this month</p></div>`;
-        } else {
-          recordsList.innerHTML = monthRecords.map(rec => `
-            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-              <div class="flex items-center justify-between gap-2">
-                <div>
-                  <p class="text-sm font-bold text-slate-800">${formatShortDate(rec.dateStr)}</p>
-                  <p class="text-xs text-slate-500 mt-0.5">
-                    IN: <span class="font-semibold text-slate-700">${formatUaeTime(rec.inTimestamp)}</span>
-                    <span class="mx-1 text-slate-300">•</span>
-                    OUT: <span class="font-semibold text-slate-700">${formatUaeTime(rec.outTimestamp)}</span>
-                  </p>
-                </div>
-                <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-100 text-emerald-800">+${formatHoursMinutes(rec.otMinutes)}</span>
-              </div>
-              <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-200">
-                <button type="button" data-record-action="edit" data-record-id="${rec.id}" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold">Edit</button>
-                <button type="button" data-record-action="delete" data-record-id="${rec.id}" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold">Delete</button>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        renderDeveloperContact();
-      }
-
-      function applyDeveloperAvatar(imgEl, photoSrc) {
-        if (!imgEl) return;
-        imgEl.onerror = function () {
-          this.onerror = null;
-          this.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#0f172a"/><text x="60" y="74" font-family="Arial,sans-serif" font-size="52" font-weight="bold" fill="#34d399" text-anchor="middle">N</text></svg>'
-          );
-        };
-        imgEl.src = photoSrc || DEFAULT_DEV_CONTACT.photo;
-      }
-
-      function renderDeveloperContact() {
-        applyDeveloperAvatar(document.getElementById('footerDevAvatar'), DEFAULT_DEV_CONTACT.photo);
-        applyDeveloperAvatar(document.getElementById('modalDevAvatar'), DEFAULT_DEV_CONTACT.photo);
-
-        const cleanDigits = DEFAULT_DEV_CONTACT.phone.replace(/[^0-9]/g, '');
-        document.getElementById('contactButtonsContainer').innerHTML = `
-          <div class="grid grid-cols-2 gap-2">
-            <a href="https://wa.me/${cleanDigits}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
-              WhatsApp
-            </a>
-            <a href="tel:${DEFAULT_DEV_CONTACT.phone}" class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
-              Call
-            </a>
-          </div>
-          <a href="mailto:${encodeURIComponent(DEFAULT_DEV_CONTACT.email)}" class="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
-            <span class="truncate">${DEFAULT_DEV_CONTACT.email}</span>
-          </a>
-        `;
-      }
-
-      function openEditRecordModal(record) {
-        document.getElementById('editRecordId').value = String(record.id);
-        document.getElementById('editDateInput').value = record.dateStr;
-        document.getElementById('editInInput').value = formatUaeTime24(record.inTimestamp);
-        document.getElementById('editOutInput').value = formatUaeTime24(record.outTimestamp);
-        document.getElementById('editModalError').textContent = '';
-        document.getElementById('editRecordModal').classList.remove('hidden');
-      }
-
-      function closeEditRecordModal() {
-        document.getElementById('editRecordModal').classList.add('hidden');
-        document.getElementById('editModalError').textContent = '';
-      }
-
-      document.getElementById('recordsList').addEventListener('click', (event) => {
-        const button = event.target.closest('button[data-record-action]');
-        if (!button) return;
-
-        const recordId = button.dataset.recordId;
-        const record = appState.records.find(item => String(item.id) === recordId);
-
-        if (!record) {
-          showToast('Record not found.');
-          return;
-        }
-
-        if (button.dataset.recordAction === 'delete') {
-          if (!confirm(`Delete the record for ${record.dateStr}?`)) return;
-          appState.records = appState.records.filter(item => String(item.id) !== recordId);
-          saveData();
-          renderUI();
-          showToast('Record deleted.');
-          return;
-        }
-
-        if (button.dataset.recordAction === 'edit') {
-          openEditRecordModal(record);
-        }
-      });
-
-      document.getElementById('editRecordForm').addEventListener('submit', (event) => {
-        event.preventDefault();
-        const recordId = document.getElementById('editRecordId').value;
-        const newDate = document.getElementById('editDateInput').value;
-        const newInTime = document.getElementById('editInInput').value;
-        const newOutTime = document.getElementById('editOutInput').value;
-        const errEl = document.getElementById('editModalError');
-
-        const record = appState.records.find(item => String(item.id) === recordId);
-        if (!record) {
-          errEl.textContent = 'Record not found.';
-          return;
-        }
-
-        const inTimestamp = Date.parse(`${newDate}T${newInTime}:00+04:00`);
-        const outTimestamp = Date.parse(`${newDate}T${newOutTime}:00+04:00`);
-
-        if (!Number.isFinite(inTimestamp) || !Number.isFinite(outTimestamp) || outTimestamp <= inTimestamp) {
-          errEl.textContent = 'OUT time must be later than IN time.';
-          return;
-        }
-
-        const newId = `${newDate}_${inTimestamp}`;
-        if (appState.records.some(item => item !== record && String(item.id) === newId)) {
-          errEl.textContent = 'Another record already exists at this date and time.';
-          return;
-        }
-
-        record.dateStr = newDate;
-        record.inTimestamp = inTimestamp;
-        record.outTimestamp = outTimestamp;
-        record.otMinutes = calculateOtMinutes(inTimestamp, outTimestamp);
-        record.id = newId;
-
-        selectedMonthStr = newDate.slice(0, 7);
-        saveData();
-        closeEditRecordModal();
-        renderUI();
-        showToast('Attendance updated & OT recalculated!');
-      });
-
-      document.getElementById('closeEditModalBtn').addEventListener('click', closeEditRecordModal);
-      document.getElementById('cancelEditRecordBtn').addEventListener('click', closeEditRecordModal);
-      document.getElementById('editRecordModal').addEventListener('click', (e) => {
-        if (e.target.id === 'editRecordModal') closeEditRecordModal();
-      });
-
-      function getSelectedMonthRecordsAsc() {
-        return appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => a.inTimestamp - b.inTimestamp);
-      }
-
-      function exportMonthlyPdf() {
-        const records = getSelectedMonthRecordsAsc();
-        if (records.length === 0) {
-          showToast('No records in this month to export.');
-          return;
-        }
-        try {
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF();
-          const monthTitle = formatMonthTitle(selectedMonthStr);
-          doc.setFontSize(18);
-          doc.text('Smart Kitchens FZE - Overtime Report', 14, 20);
-          doc.setFontSize(11);
-          doc.text(`Period: ${monthTitle}  |  UAE Time`, 14, 28);
-
-          const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
-          const rows = records.map(r => [r.dateStr, formatUaeTime(r.inTimestamp), formatUaeTime(r.outTimestamp), formatHoursMinutes(r.otMinutes), `${r.otMinutes} mins`]);
-
-          doc.autoTable({
-            startY: 35,
-            head: [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'OT Minutes']],
-            body: rows,
-            theme: 'grid',
-            foot: [['MONTHLY OT TOTAL', '', '', formatHoursMinutes(totalMins), `${totalMins} mins`]]
-          });
-
-          doc.save(`SmartKitchens_OT_${selectedMonthStr}.pdf`);
-          showToast('PDF Report downloaded!');
-        } catch (err) {
-          showToast('Error generating PDF.');
-        }
-      }
-
-      function exportMonthlyCsv() {
-        const records = getSelectedMonthRecordsAsc();
-        if (records.length === 0) {
-          showToast('No records to export.');
-          return;
-        }
-        const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
-        const lines = [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'Total Mins'].join(',')];
-        for (const r of records) {
-          lines.push([r.dateStr, `"${formatUaeTime(r.inTimestamp)}"`, `"${formatUaeTime(r.outTimestamp)}"`, `"${formatHoursMinutes(r.otMinutes)}"`, r.otMinutes].join(','));
-        }
-        lines.push(['MONTHLY TOTAL', '', '', `"${formatHoursMinutes(totalMins)}"`, totalMins].join(','));
-        triggerDownload(new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' }), `SmartKitchens_OT_${selectedMonthStr}.csv`);
-        showToast('CSV downloaded!');
-      }
-
-      function backupJsonData() {
-        const blob = new Blob([JSON.stringify({ app: 'Smart Kitchens FZE OT Tracker', data: appState }, null, 2)], { type: 'application/json' });
-        triggerDownload(blob, `SmartKitchens_Backup.json`);
-        showToast('Backup saved!');
-      }
-
-      function restoreJsonData(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (ev) {
-          try {
-            const parsed = JSON.parse(ev.target.result);
-            const restored = parsed.data ? parsed.data : parsed;
-            appState.records = restored.records || [];
-            appState.activeSession = restored.activeSession || null;
-            saveData();
-            renderUI();
-            showToast('Restored successfully!');
-          } catch (err) {
-            showToast('Invalid backup file.');
-          } finally {
-            e.target.value = '';
-          }
-        };
-        reader.readAsText(file);
-      }
-
-      function triggerDownload(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
-
-      function showToast(msg) {
-        const box = document.getElementById('toastBox');
-        document.getElementById('toastMessage').textContent = msg;
-        box.classList.remove('hidden');
-        setTimeout(() => box.classList.add('hidden'), 3500);
-      }
-
-      window.hideToast = () => document.getElementById('toastBox').classList.add('hidden');
-
-      document.getElementById('punchBtn').addEventListener('click', handlePunchTap);
-      document.getElementById('undoBtn').addEventListener('click', undoLastPunch);
-      document.getElementById('lockAppBtn').addEventListener('click', () => lockApp(false));
-      document.getElementById('prevMonthBtn').addEventListener('click', () => {
-        const [y, m] = selectedMonthStr.split('-').map(Number);
-        const dt = new Date(Date.UTC(y, m - 2, 15));
-        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
-        renderUI();
-      });
-      document.getElementById('nextMonthBtn').addEventListener('click', () => {
-        const [y, m] = selectedMonthStr.split('-').map(Number);
-        const dt = new Date(Date.UTC(y, m, 15));
-        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
-        renderUI();
-      });
-
-      document.getElementById('openToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
-      document.getElementById('openAboutFooterBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
-      document.getElementById('closeToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.add('hidden'));
-      document.getElementById('exportPdfBtn').addEventListener('click', exportMonthlyPdf);
-      document.getElementById('exportCsvBtn').addEventListener('click', exportMonthlyCsv);
-      document.getElementById('backupJsonBtn').addEventListener('click', backupJsonData);
-      document.getElementById('restoreJsonInput').addEventListener('change', restoreJsonData);
-
-      loadData();
-      renderUI();
-      renderClockAndSchedule();
-      setInterval(renderClockAndSchedule, 1000);
-      setInterval(syncLockState, 10000);
-    })();
-  </script>
-</body>
-</html>
+            <input id="editInInput" type="time" required class="w-full px-
