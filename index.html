@@ -53,7 +53,92 @@
       overflow: hidden;
     }
 
-    /* Background Cartoon People Layer (Top & Bottom Empty Spaces) */
+    /* Welcome Splash Overlay after Login */
+    #welcomeSplashOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 12, 20, 0.78);
+      backdrop-filter: blur(6px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100000;
+      padding: 20px;
+      box-sizing: border-box;
+      opacity: 0;
+      transition: opacity 0.55s ease;
+    }
+
+    #welcomeSplashOverlay.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    #welcomeSplashOverlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .welcome-banner-card {
+      width: 100%;
+      max-width: 440px;
+      background: #102336;
+      border-radius: 26px;
+      padding: 32px 24px;
+      text-align: center;
+      color: #ffffff;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transform: translateY(16px) scale(0.96);
+      opacity: 0;
+      transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
+    }
+
+    #welcomeSplashOverlay.show .welcome-banner-card {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    #welcomeSplashOverlay.fade-out .welcome-banner-card {
+      transform: translateY(-10px) scale(0.98);
+      opacity: 0;
+    }
+
+    .welcome-heading {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      color: #ffffff;
+      margin: 0 0 14px 0;
+    }
+
+    .welcome-warm-line {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: Georgia, 'Times New Roman', serif;
+      color: #f8fafc;
+      margin: 0 0 8px 0;
+      line-height: 1.35;
+    }
+
+    .welcome-team-line {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: Georgia, 'Times New Roman', serif;
+      color: #ffffff;
+      margin: 0 0 18px 0;
+      line-height: 1.35;
+    }
+
+    .welcome-sub-line {
+      font-size: 14px;
+      font-weight: 500;
+      font-family: Georgia, 'Times New Roman', serif;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.55;
+    }
+
     .bg-people-layer {
       position: fixed;
       inset: 0;
@@ -141,7 +226,6 @@
       96% { transform: scaleY(0.1); }
     }
 
-    /* Walking & Bobbing Cartoon People Animations */
     @keyframes walkRight {
       0% { transform: translateX(-110px); }
       100% { transform: translateX(calc(100vw + 110px)); }
@@ -312,39 +396,40 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col items-center">
 
+  <!-- Welcome Animation Screen after Password Unlock -->
+  <div id="welcomeSplashOverlay" role="dialog" aria-label="Welcome Message">
+    <div class="welcome-banner-card">
+      <h2 class="welcome-heading">WELCOME!</h2>
+      <p class="welcome-warm-line">A Warm Welcome to You,</p>
+      <p class="welcome-team-line">The Hardworking Team!</p>
+      <p class="welcome-sub-line">
+        Your dedication and hard work are truly valued.<br />
+        We're glad to have you here.
+      </p>
+    </div>
+  </div>
+
   <div id="loginOverlay">
-    <!-- Top & Bottom Cartoon People Background -->
     <div class="bg-people-layer" aria-hidden="true">
-      <!-- Top Empty Area: Walking Technician with Cap -->
       <div class="bg-people-top">
         <svg viewBox="0 0 120 110" width="90" height="82" class="walk-track-right">
           <ellipse cx="60" cy="100" rx="22" ry="4.5" fill="#cbd5e1" />
           <g class="person-bob">
-            <!-- Back Arm -->
             <line x1="60" y1="50" x2="52" y2="68" stroke="#1e3a8a" stroke-width="5" stroke-linecap="round" class="arm-b" />
-            <!-- Back Leg -->
             <line x1="58" y1="72" x2="51" y2="96" stroke="#334155" stroke-width="5.5" stroke-linecap="round" class="leg-b" />
-            <!-- Front Leg -->
             <line x1="62" y1="72" x2="69" y2="96" stroke="#0f172a" stroke-width="5.5" stroke-linecap="round" class="leg-a" />
-            <!-- Torso (Blue Work Shirt) -->
             <rect x="52" y="45" width="16" height="28" rx="7" fill="#2563eb" />
-            <!-- Head -->
             <circle cx="60" cy="33" r="10.5" fill="#fcd34d" />
-            <!-- Eye & Smile -->
             <circle cx="64" cy="32" r="1.5" fill="#0f172a" />
             <path d="M62 37 Q65 39 67 37" fill="none" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" />
-            <!-- Cap -->
             <path d="M49 30 Q60 19 71 30 Z" fill="#0284c7" />
             <rect x="61" y="28" width="14" height="3.5" rx="1.75" fill="#0369a1" />
-            <!-- Front Arm -->
             <line x1="60" y1="50" x2="70" y2="67" stroke="#3b82f6" stroke-width="5" stroke-linecap="round" class="arm-a" />
           </g>
         </svg>
       </div>
 
-      <!-- Bottom Empty Area: Two Cartoon Workers Walking -->
       <div class="bg-people-bottom">
-        <!-- Person 1 (Walking Right) -->
         <svg viewBox="0 0 120 115" width="96" height="92" class="walk-track-right-slow" style="position:absolute; bottom:0;">
           <ellipse cx="60" cy="105" rx="24" ry="5" fill="#cbd5e1" />
           <g class="person-bob">
@@ -360,7 +445,6 @@
           </g>
         </svg>
 
-        <!-- Person 2 (Walking Left) -->
         <svg viewBox="0 0 120 115" width="96" height="92" class="walk-track-left" style="position:absolute; bottom:4px;">
           <ellipse cx="60" cy="105" rx="24" ry="5" fill="#cbd5e1" />
           <g class="person-bob">
@@ -414,11 +498,10 @@
           type="password"
           id="appPassword"
           placeholder="Enter Password"
-          onkeydown="handleEnterPassword(event)"
         />
       </div>
 
-      <button type="button" onclick="checkAppPassword()" class="login-btn">Unlock App</button>
+      <button type="button" id="unlockAppBtn" class="login-btn">Unlock App</button>
       <p id="errorMsg" class="error-text"></p>
 
       <div id="securityWarningBox" class="hidden mt-3 p-3.5 rounded-2xl bg-red-600 text-white text-left text-xs shadow-lg border-2 border-red-800 space-y-1.5">
@@ -681,6 +764,50 @@
     const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
     const EXPECTED_PASSCODE = 'SKFZE2026';
 
+    let welcomeHoldTimer = null;
+    let welcomeHideTimer = null;
+
+    function clearWelcomeTimers() {
+      if (welcomeHoldTimer) {
+        clearTimeout(welcomeHoldTimer);
+        welcomeHoldTimer = null;
+      }
+      if (welcomeHideTimer) {
+        clearTimeout(welcomeHideTimer);
+        welcomeHideTimer = null;
+      }
+    }
+
+    function hideWelcomeSplashImmediately() {
+      clearWelcomeTimers();
+      const splash = document.getElementById('welcomeSplashOverlay');
+      if (!splash) return;
+      splash.classList.add('fade-out');
+      welcomeHideTimer = setTimeout(() => {
+        splash.classList.remove('show', 'fade-out');
+        splash.style.display = 'none';
+      }, 450);
+    }
+
+    function playWelcomeSplash() {
+      clearWelcomeTimers();
+      const splash = document.getElementById('welcomeSplashOverlay');
+      if (!splash) return;
+
+      splash.style.display = 'flex';
+      splash.classList.remove('fade-out');
+      void splash.offsetWidth;
+      splash.classList.add('show');
+
+      welcomeHoldTimer = setTimeout(() => {
+        splash.classList.add('fade-out');
+        welcomeHideTimer = setTimeout(() => {
+          splash.classList.remove('show', 'fade-out');
+          splash.style.display = 'none';
+        }, 550);
+      }, 2600);
+    }
+
     function isSessionExpired() {
       const unlockedAt = Number(localStorage.getItem(UNLOCKED_AT_KEY) || '0');
       if (!unlockedAt) return true;
@@ -690,14 +817,17 @@
     function syncLockState() {
       const isUnlocked = localStorage.getItem('sk_app_unlocked') === 'true';
       const overlay = document.getElementById('loginOverlay');
+      if (!overlay) return;
+
       if (!isUnlocked || isSessionExpired()) {
         if (overlay.style.display !== 'flex') {
           const wasExpired = isUnlocked && isSessionExpired();
           localStorage.removeItem('sk_app_unlocked');
           localStorage.removeItem(UNLOCKED_AT_KEY);
-          document.getElementById('errorMsg').innerText = wasExpired
-            ? "Session expired after 18 hours. Please unlock again."
-            : "";
+          const errEl = document.getElementById('errorMsg');
+          if (errEl) {
+            errEl.innerText = wasExpired ? "Session expired after 18 hours. Please unlock again." : "";
+          }
           const warnBox = document.getElementById('securityWarningBox');
           if (warnBox) warnBox.classList.add('hidden');
           overlay.style.display = 'flex';
@@ -707,8 +837,83 @@
       }
     }
 
+    function checkAppPassword() {
+      const inputEl = document.getElementById('appPassword');
+      const err = document.getElementById('errorMsg');
+      const warnBox = document.getElementById('securityWarningBox');
+      const metaText = document.getElementById('deviceMetaText');
+      const overlay = document.getElementById('loginOverlay');
+
+      try {
+        const entered = ((inputEl && inputEl.value) || '').trim();
+        if (entered === EXPECTED_PASSCODE) {
+          localStorage.setItem('sk_app_unlocked', 'true');
+          localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
+          if (overlay) overlay.style.display = 'none';
+          if (inputEl) inputEl.value = "";
+          if (err) err.innerText = "";
+          if (warnBox) warnBox.classList.add('hidden');
+          playWelcomeSplash();
+        } else {
+          if (err) err.innerText = "Access Denied! Invalid Password.";
+          if (inputEl) inputEl.value = "";
+
+          if (warnBox) {
+            warnBox.classList.remove('hidden');
+            const nowStr = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dubai' });
+            const platform = navigator.platform || 'Unknown Device';
+            const lang = navigator.language || 'en';
+            if (metaText) {
+              metaText.textContent = `Logged: ${nowStr} (UAE) • Device: ${platform} (${lang})`;
+            }
+          }
+        }
+      } catch (e) {
+        if (err) err.innerText = "Unlock error: " + (e && e.message ? e.message : "Unknown");
+      }
+    }
+
+    function lockApp(expired = false) {
+      clearWelcomeTimers();
+      const splash = document.getElementById('welcomeSplashOverlay');
+      if (splash) {
+        splash.classList.remove('show', 'fade-out');
+        splash.style.display = 'none';
+      }
+      localStorage.removeItem('sk_app_unlocked');
+      localStorage.removeItem(UNLOCKED_AT_KEY);
+      const inputEl = document.getElementById('appPassword');
+      if (inputEl) inputEl.value = "";
+      const errEl = document.getElementById('errorMsg');
+      if (errEl) {
+        errEl.innerText = expired ? "Session expired after 18 hours. Please unlock again." : "";
+      }
+      const warnBox = document.getElementById('securityWarningBox');
+      if (warnBox) warnBox.classList.add('hidden');
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) overlay.style.display = 'flex';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       syncLockState();
+      const unlockBtn = document.getElementById('unlockAppBtn');
+      const passInput = document.getElementById('appPassword');
+      const splash = document.getElementById('welcomeSplashOverlay');
+
+      if (unlockBtn) {
+        unlockBtn.addEventListener('click', checkAppPassword);
+      }
+      if (passInput) {
+        passInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            checkAppPassword();
+          }
+        });
+      }
+      if (splash) {
+        splash.addEventListener('click', hideWelcomeSplashImmediately);
+      }
     });
 
     document.addEventListener('visibilitychange', () => {
@@ -716,54 +921,6 @@
         syncLockState();
       }
     });
-
-    function handleEnterPassword(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        checkAppPassword();
-      }
-    }
-
-    function checkAppPassword() {
-      const inputEl = document.getElementById('appPassword');
-      const entered = (inputEl.value || '').trim();
-      const err = document.getElementById('errorMsg');
-      const warnBox = document.getElementById('securityWarningBox');
-      const metaText = document.getElementById('deviceMetaText');
-
-      if (entered === EXPECTED_PASSCODE) {
-        localStorage.setItem('sk_app_unlocked', 'true');
-        localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
-        document.getElementById('loginOverlay').style.display = 'none';
-        inputEl.value = "";
-        err.innerText = "";
-        if (warnBox) warnBox.classList.add('hidden');
-      } else {
-        err.innerText = "Access Denied! Invalid Password.";
-        inputEl.value = "";
-
-        if (warnBox) {
-          warnBox.classList.remove('hidden');
-          const nowStr = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dubai' });
-          const platform = navigator.platform || 'Unknown Device';
-          const lang = navigator.language || 'en';
-          if (metaText) {
-            metaText.textContent = `Logged: ${nowStr} (UAE) • Device: ${platform} (${lang})`;
-          }
-        }
-      }
-    }
-
-    function lockApp(expired = false) {
-      localStorage.removeItem('sk_app_unlocked');
-      localStorage.removeItem(UNLOCKED_AT_KEY);
-      const inputEl = document.getElementById('appPassword');
-      if (inputEl) inputEl.value = "";
-      document.getElementById('errorMsg').innerText = expired ? "Session expired after 18 hours. Please unlock again." : "";
-      const warnBox = document.getElementById('securityWarningBox');
-      if (warnBox) warnBox.classList.add('hidden');
-      document.getElementById('loginOverlay').style.display = 'flex';
-    }
 
     (function () {
       'use strict';
@@ -1148,7 +1305,7 @@
       });
 
       function getSelectedMonthRecordsAsc() {
-        return appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => a.inTimestamp - b.inTimestamp);
+        return appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => a.inTimestamp - a.inTimestamp);
       }
 
       function exportMonthlyPdf() {
