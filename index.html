@@ -415,10 +415,9 @@
   </div>
 
   <script>
-    // SHA-256 hash of "SKFZE2026"
-    const PASSCODE_HASH = "8f5e5078f8c4d88c4b1443a6bc9a7076be89c94aa1e4f0e83a13c542516e2cb0";
     const AUTO_LOCK_MS = 18 * 60 * 60 * 1000; // 18 hours in milliseconds
     const UNLOCKED_AT_KEY = 'sk_app_unlocked_at';
+    let PASSCODE_HASH = null;
 
     async function sha256Hex(text) {
       const data = new TextEncoder().encode(text);
@@ -426,6 +425,13 @@
       return Array.from(new Uint8Array(hashBuffer))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
+    }
+
+    async function getPasscodeHash() {
+      if (!PASSCODE_HASH) {
+        PASSCODE_HASH = await sha256Hex("SKFZE2026");
+      }
+      return PASSCODE_HASH;
     }
 
     function isSessionExpired() {
@@ -444,6 +450,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      getPasscodeHash();
       syncLockState();
     });
 
@@ -464,13 +471,553 @@
       const err = document.getElementById('errorMsg');
       const warnBox = document.getElementById('securityWarningBox');
       const metaText = document.getElementById('deviceMetaText');
+      const expectedHash = await getPasscodeHash();
       const enteredHash = await sha256Hex(entered);
 
-      if (enteredHash === PASSCODE_HASH) {
+      if (enteredHash === expectedHash) {
         localStorage.setItem('sk_app_unlocked', 'true');
         localStorage.setItem(UNLOCKED_AT_KEY, String(Date.now()));
         document.getElementById('loginOverlay').style.display = 'none';
         err.innerText = "";
         if (warnBox) warnBox.classList.add('hidden');
       } else {
-        err.innerText = "Access Denied!
+        err.innerText = "Access Denied! Invalid Password.";
+        document.getElementById('appPassword').value = "";
+
+        if (warnBox) {
+          warnBox.classList.remove('hidden');
+          const nowStr = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dubai' });
+          const platform = navigator.platform || 'Unknown Device';
+          const lang = navigator.language || 'en';
+          if (metaText) {
+            metaText.textContent = `Logged: ${nowStr} (UAE) • Device: ${platform} (${lang})`;
+          }
+        }
+      }
+    }
+
+    function lockApp(expired = false) {
+      localStorage.removeItem('sk_app_unlocked');
+      localStorage.removeItem(UNLOCKED_AT_KEY);
+      document.getElementById('appPassword').value = "";
+      document.getElementById('errorMsg').innerText = expired ? "Session expired after 18 hours. Please unlock again." : "";
+      const warnBox = document.getElementById('securityWarningBox');
+      if (warnBox) warnBox.classList.add('hidden');
+      document.getElementById('loginOverlay').style.display = 'flex';
+    }
+
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'uae_personal_ot_tracker_v1';
+      const TIMEZONE = 'Asia/Dubai';
+      const OT_START_HOUR = 18;
+      const OT_START_MINUTE = 0;
+
+      const DEFAULT_DEV_CONTACT = {
+        name: 'Nipun',
+        phone: '+971562284001',
+        email: 'nipunkitchentec@gmail.com',
+        photo: '1000044128.jpg'
+      };
+
+      let appState = { activeSession: null, records: [] };
+      let selectedMonthStr = '';
+      let lastTapTimestamp = 0;
+      let lastActionBackup = null;
+      let undoTimer = null;
+
+      function getUaeParts(dateObj = new Date()) {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, weekday: 'short'
+        });
+        const parts = formatter.formatToParts(dateObj);
+        const map = {};
+        for (const p of parts) { map[p.type] = p.value; }
+        const hour = map.hour === '24' ? 0 : parseInt(map.hour, 10);
+        return {
+          year: map.year, month: map.month, day: map.day,
+          dateStr: `${map.year}-${map.month}-${map.day}`,
+          monthStr: `${map.year}-${map.month}`,
+          weekday: map.weekday,
+          isSunday: map.weekday === 'Sun',
+          hour, minute: parseInt(map.minute, 10), second: parseInt(map.second, 10)
+        };
+      }
+
+      function formatUaeTime(timestamp) {
+        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(timestamp));
+      }
+
+      function formatUaeTime24(timestamp) {
+        return new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(timestamp));
+      }
+
+      function formatUaeClock(dateObj = new Date()) {
+        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).format(dateObj);
+      }
+
+      function formatUaeFullDate(dateObj = new Date()) {
+        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(dateObj);
+      }
+
+      function formatShortDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(Date.UTC(y, m - 1, d, 12, 0, 0)));
+      }
+
+      function formatMonthTitle(monthStr) {
+        const [y, m] = monthStr.split('-').map(Number);
+        return new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, month: 'long', year: 'numeric' }).format(new Date(Date.UTC(y, m - 1, 15, 12, 0, 0)));
+      }
+
+      function calculateOtMinutes(inTimestamp, outTimestamp) {
+        if (!inTimestamp || !outTimestamp || outTimestamp <= inTimestamp) return 0;
+        const inParts = getUaeParts(new Date(inTimestamp));
+        if (inParts.isSunday) return 0;
+
+        const sixPmIso = `${inParts.dateStr}T${String(OT_START_HOUR).padStart(2, '0')}:${String(OT_START_MINUTE).padStart(2, '0')}:00+04:00`;
+        const sixPmTimestamp = new Date(sixPmIso).getTime();
+        const effectiveOtStart = Math.max(inTimestamp, sixPmTimestamp);
+
+        if (outTimestamp <= effectiveOtStart) return 0;
+        return Math.floor((outTimestamp - effectiveOtStart) / 60000);
+      }
+
+      function formatHoursMinutes(totalMinutes) {
+        const mins = Math.max(0, Math.floor(totalMinutes));
+        return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+      }
+
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.records)) {
+              appState.records = parsed.records;
+              appState.activeSession = parsed.activeSession || null;
+            }
+          }
+        } catch (err) {}
+      }
+
+      function saveData() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); } catch (err) {}
+      }
+
+      function handlePunchTap() {
+        const now = Date.now();
+        if (now - lastTapTimestamp < 3000) return;
+        lastTapTimestamp = now;
+
+        const uaeNow = getUaeParts(new Date(now));
+        if (uaeNow.isSunday) {
+          showToast('Today is Sunday (WEEKLY OFF).');
+          return;
+        }
+
+        lastActionBackup = JSON.parse(JSON.stringify(appState));
+
+        if (!appState.activeSession) {
+          appState.activeSession = { dateStr: uaeNow.dateStr, inTimestamp: now };
+          saveData();
+          triggerUndoBanner(`Clocked IN at ${formatUaeTime(now)}`);
+          showToast(`IN recorded at ${formatUaeTime(now)}`);
+        } else {
+          const inTs = appState.activeSession.inTimestamp;
+          const dateStr = appState.activeSession.dateStr;
+          const otMinutes = calculateOtMinutes(inTs, now);
+
+          appState.records.unshift({ id: `${dateStr}_${inTs}`, dateStr, inTimestamp: inTs, outTimestamp: now, otMinutes });
+          appState.activeSession = null;
+          selectedMonthStr = dateStr.slice(0, 7);
+          saveData();
+          triggerUndoBanner(`Clocked OUT (${formatHoursMinutes(otMinutes)} OT)`);
+          showToast(`OUT recorded • OT: ${formatHoursMinutes(otMinutes)}`);
+        }
+        renderUI();
+      }
+
+      function triggerUndoBanner(label) {
+        const undoBar = document.getElementById('undoBar');
+        document.getElementById('undoPrompt').textContent = label;
+        undoBar.classList.remove('hidden');
+
+        if (undoTimer) clearTimeout(undoTimer);
+        undoTimer = setTimeout(() => {
+          undoBar.classList.add('hidden');
+          lastActionBackup = null;
+        }, 15000);
+      }
+
+      function undoLastPunch() {
+        if (!lastActionBackup) return;
+        appState = lastActionBackup;
+        lastActionBackup = null;
+        saveData();
+        document.getElementById('undoBar').classList.add('hidden');
+        if (undoTimer) clearTimeout(undoTimer);
+        showToast('Last punch undone.');
+        renderUI();
+      }
+
+      function renderClockAndSchedule() {
+        syncLockState();
+        const now = new Date();
+        const uaeNow = getUaeParts(now);
+
+        document.getElementById('liveDate').textContent = formatUaeFullDate(now);
+        document.getElementById('liveClock').textContent = formatUaeClock(now);
+
+        if (uaeNow.isSunday && !appState.activeSession) {
+          document.getElementById('weeklyOffView').classList.remove('hidden');
+          document.getElementById('workDayView').classList.add('hidden');
+        } else {
+          document.getElementById('weeklyOffView').classList.add('hidden');
+          document.getElementById('workDayView').classList.remove('hidden');
+        }
+
+        if (appState.activeSession) {
+          document.getElementById('liveOtDisplay').textContent = formatHoursMinutes(calculateOtMinutes(appState.activeSession.inTimestamp, now.getTime()));
+          if (appState.activeSession.dateStr === uaeNow.dateStr) {
+            updateSummaryCards(uaeNow);
+          }
+        }
+      }
+
+      function updateSummaryCards(uaeNow) {
+        const nowTs = Date.now();
+        let todayMins = appState.records.filter(r => r.dateStr === uaeNow.dateStr).reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+        if (appState.activeSession && appState.activeSession.dateStr === uaeNow.dateStr) {
+          todayMins += calculateOtMinutes(appState.activeSession.inTimestamp, nowTs);
+        }
+        document.getElementById('todayOtText').textContent = formatHoursMinutes(todayMins);
+        document.getElementById('todayOtMinsSub').textContent = `${todayMins} total mins`;
+
+        let monthMins = appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+        if (appState.activeSession && appState.activeSession.dateStr.startsWith(selectedMonthStr)) {
+          monthMins += calculateOtMinutes(appState.activeSession.inTimestamp, nowTs);
+        }
+        document.getElementById('monthlyOtText').textContent = formatHoursMinutes(monthMins);
+        document.getElementById('monthlyOtMinsSub').textContent = `${monthMins} total mins`;
+      }
+
+      function renderUI() {
+        const uaeNow = getUaeParts(new Date());
+        if (!selectedMonthStr) selectedMonthStr = uaeNow.monthStr;
+
+        const punchBtn = document.getElementById('punchBtn');
+        const punchBtnLabel = document.getElementById('punchBtnLabel');
+        const punchBtnSub = document.getElementById('punchBtnSub');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const activeSessionBar = document.getElementById('activeSessionBar');
+
+        if (appState.activeSession) {
+          punchBtn.className = 'w-full h-32 rounded-3xl bg-rose-600 text-white shadow-lg flex flex-col items-center justify-center cursor-pointer pulse-ring';
+          punchBtnLabel.textContent = 'OUT';
+          punchBtnSub.textContent = 'Tap to finish duty & calculate OT';
+          statusBadge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-4';
+          statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
+          statusText.textContent = 'Currently Working';
+          activeSessionBar.classList.remove('hidden');
+          document.getElementById('currentInDisplay').textContent = formatUaeTime(appState.activeSession.inTimestamp);
+        } else {
+          punchBtn.className = 'w-full h-32 rounded-3xl bg-emerald-600 text-white shadow-lg flex flex-col items-center justify-center cursor-pointer';
+          punchBtnLabel.textContent = 'IN';
+          punchBtnSub.textContent = 'Tap to record arrival time';
+          statusBadge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4';
+          statusDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+          statusText.textContent = 'Off Duty • Ready';
+          activeSessionBar.classList.add('hidden');
+        }
+
+        updateSummaryCards(uaeNow);
+        const monthTitle = formatMonthTitle(selectedMonthStr);
+        document.getElementById('selectedMonthLabel').textContent = monthTitle;
+        document.getElementById('modalMonthSubtitle').textContent = monthTitle;
+
+        const monthRecords = appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => b.inTimestamp - a.inTimestamp);
+        document.getElementById('selectedMonthSummary').textContent = `${monthRecords.length} shifts`;
+
+        const recordsList = document.getElementById('recordsList');
+        if (monthRecords.length === 0) {
+          recordsList.innerHTML = `<div class="text-center py-8"><p class="text-sm font-semibold text-slate-500">No records for this month</p></div>`;
+        } else {
+          recordsList.innerHTML = monthRecords.map(rec => `
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <p class="text-sm font-bold text-slate-800">${formatShortDate(rec.dateStr)}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    IN: <span class="font-semibold text-slate-700">${formatUaeTime(rec.inTimestamp)}</span>
+                    <span class="mx-1 text-slate-300">•</span>
+                    OUT: <span class="font-semibold text-slate-700">${formatUaeTime(rec.outTimestamp)}</span>
+                  </p>
+                </div>
+                <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-100 text-emerald-800">+${formatHoursMinutes(rec.otMinutes)}</span>
+              </div>
+              <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-200">
+                <button type="button" data-record-action="edit" data-record-id="${rec.id}" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold">Edit</button>
+                <button type="button" data-record-action="delete" data-record-id="${rec.id}" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold">Delete</button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        renderDeveloperContact();
+      }
+
+      function applyDeveloperAvatar(imgEl, photoSrc) {
+        if (!imgEl) return;
+        imgEl.onerror = function () {
+          this.onerror = null;
+          this.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#0f172a"/><text x="60" y="74" font-family="Arial,sans-serif" font-size="52" font-weight="bold" fill="#34d399" text-anchor="middle">N</text></svg>'
+          );
+        };
+        imgEl.src = photoSrc || DEFAULT_DEV_CONTACT.photo;
+      }
+
+      function renderDeveloperContact() {
+        applyDeveloperAvatar(document.getElementById('footerDevAvatar'), DEFAULT_DEV_CONTACT.photo);
+        applyDeveloperAvatar(document.getElementById('modalDevAvatar'), DEFAULT_DEV_CONTACT.photo);
+
+        const cleanDigits = DEFAULT_DEV_CONTACT.phone.replace(/[^0-9]/g, '');
+        document.getElementById('contactButtonsContainer').innerHTML = `
+          <div class="grid grid-cols-2 gap-2">
+            <a href="https://wa.me/${cleanDigits}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              WhatsApp
+            </a>
+            <a href="tel:${DEFAULT_DEV_CONTACT.phone}" class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              Call
+            </a>
+          </div>
+          <a href="mailto:${encodeURIComponent(DEFAULT_DEV_CONTACT.email)}" class="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+            <span class="truncate">${DEFAULT_DEV_CONTACT.email}</span>
+          </a>
+        `;
+      }
+
+      function openEditRecordModal(record) {
+        document.getElementById('editRecordId').value = String(record.id);
+        document.getElementById('editDateInput').value = record.dateStr;
+        document.getElementById('editInInput').value = formatUaeTime24(record.inTimestamp);
+        document.getElementById('editOutInput').value = formatUaeTime24(record.outTimestamp);
+        document.getElementById('editModalError').textContent = '';
+        document.getElementById('editRecordModal').classList.remove('hidden');
+      }
+
+      function closeEditRecordModal() {
+        document.getElementById('editRecordModal').classList.add('hidden');
+        document.getElementById('editModalError').textContent = '';
+      }
+
+      document.getElementById('recordsList').addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-record-action]');
+        if (!button) return;
+
+        const recordId = button.dataset.recordId;
+        const record = appState.records.find(item => String(item.id) === recordId);
+
+        if (!record) {
+          showToast('Record not found.');
+          return;
+        }
+
+        if (button.dataset.recordAction === 'delete') {
+          if (!confirm(`Delete the record for ${record.dateStr}?`)) return;
+          appState.records = appState.records.filter(item => String(item.id) !== recordId);
+          saveData();
+          renderUI();
+          showToast('Record deleted.');
+          return;
+        }
+
+        if (button.dataset.recordAction === 'edit') {
+          openEditRecordModal(record);
+        }
+      });
+
+      document.getElementById('editRecordForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const recordId = document.getElementById('editRecordId').value;
+        const newDate = document.getElementById('editDateInput').value;
+        const newInTime = document.getElementById('editInInput').value;
+        const newOutTime = document.getElementById('editOutInput').value;
+        const errEl = document.getElementById('editModalError');
+
+        const record = appState.records.find(item => String(item.id) === recordId);
+        if (!record) {
+          errEl.textContent = 'Record not found.';
+          return;
+        }
+
+        const inTimestamp = Date.parse(`${newDate}T${newInTime}:00+04:00`);
+        const outTimestamp = Date.parse(`${newDate}T${newOutTime}:00+04:00`);
+
+        if (!Number.isFinite(inTimestamp) || !Number.isFinite(outTimestamp) || outTimestamp <= inTimestamp) {
+          errEl.textContent = 'OUT time must be later than IN time.';
+          return;
+        }
+
+        const newId = `${newDate}_${inTimestamp}`;
+        if (appState.records.some(item => item !== record && String(item.id) === newId)) {
+          errEl.textContent = 'Another record already exists at this date and time.';
+          return;
+        }
+
+        record.dateStr = newDate;
+        record.inTimestamp = inTimestamp;
+        record.outTimestamp = outTimestamp;
+        record.otMinutes = calculateOtMinutes(inTimestamp, outTimestamp);
+        record.id = newId;
+
+        selectedMonthStr = newDate.slice(0, 7);
+        saveData();
+        closeEditRecordModal();
+        renderUI();
+        showToast('Attendance updated & OT recalculated!');
+      });
+
+      document.getElementById('closeEditModalBtn').addEventListener('click', closeEditRecordModal);
+      document.getElementById('cancelEditRecordBtn').addEventListener('click', closeEditRecordModal);
+      document.getElementById('editRecordModal').addEventListener('click', (e) => {
+        if (e.target.id === 'editRecordModal') closeEditRecordModal();
+      });
+
+      function getSelectedMonthRecordsAsc() {
+        return appState.records.filter(r => r.dateStr.startsWith(selectedMonthStr)).sort((a, b) => a.inTimestamp - b.inTimestamp);
+      }
+
+      function exportMonthlyPdf() {
+        const records = getSelectedMonthRecordsAsc();
+        if (records.length === 0) {
+          showToast('No records in this month to export.');
+          return;
+        }
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          const monthTitle = formatMonthTitle(selectedMonthStr);
+          doc.setFontSize(18);
+          doc.text('Smart Kitchens FZE - Overtime Report', 14, 20);
+          doc.setFontSize(11);
+          doc.text(`Period: ${monthTitle}  |  UAE Time`, 14, 28);
+
+          const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+          const rows = records.map(r => [r.dateStr, formatUaeTime(r.inTimestamp), formatUaeTime(r.outTimestamp), formatHoursMinutes(r.otMinutes), `${r.otMinutes} mins`]);
+
+          doc.autoTable({
+            startY: 35,
+            head: [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'OT Minutes']],
+            body: rows,
+            theme: 'grid',
+            foot: [['MONTHLY OT TOTAL', '', '', formatHoursMinutes(totalMins), `${totalMins} mins`]]
+          });
+
+          doc.save(`SmartKitchens_OT_${selectedMonthStr}.pdf`);
+          showToast('PDF Report downloaded!');
+        } catch (err) {
+          showToast('Error generating PDF.');
+        }
+      }
+
+      function exportMonthlyCsv() {
+        const records = getSelectedMonthRecordsAsc();
+        if (records.length === 0) {
+          showToast('No records to export.');
+          return;
+        }
+        const totalMins = records.reduce((sum, r) => sum + (r.otMinutes || 0), 0);
+        const lines = [['Date', 'IN Time', 'OUT Time', 'Daily OT', 'Total Mins'].join(',')];
+        for (const r of records) {
+          lines.push([r.dateStr, `"${formatUaeTime(r.inTimestamp)}"`, `"${formatUaeTime(r.outTimestamp)}"`, `"${formatHoursMinutes(r.otMinutes)}"`, r.otMinutes].join(','));
+        }
+        lines.push(['MONTHLY TOTAL', '', '', `"${formatHoursMinutes(totalMins)}"`, totalMins].join(','));
+        triggerDownload(new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' }), `SmartKitchens_OT_${selectedMonthStr}.csv`);
+        showToast('CSV downloaded!');
+      }
+
+      function backupJsonData() {
+        const blob = new Blob([JSON.stringify({ app: 'Smart Kitchens FZE OT Tracker', data: appState }, null, 2)], { type: 'application/json' });
+        triggerDownload(blob, `SmartKitchens_Backup.json`);
+        showToast('Backup saved!');
+      }
+
+      function restoreJsonData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            const restored = parsed.data ? parsed.data : parsed;
+            appState.records = restored.records || [];
+            appState.activeSession = restored.activeSession || null;
+            saveData();
+            renderUI();
+            showToast('Restored successfully!');
+          } catch (err) {
+            showToast('Invalid backup file.');
+          } finally {
+            e.target.value = '';
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function showToast(msg) {
+        const box = document.getElementById('toastBox');
+        document.getElementById('toastMessage').textContent = msg;
+        box.classList.remove('hidden');
+        setTimeout(() => box.classList.add('hidden'), 3500);
+      }
+
+      window.hideToast = () => document.getElementById('toastBox').classList.add('hidden');
+
+      document.getElementById('punchBtn').addEventListener('click', handlePunchTap);
+      document.getElementById('undoBtn').addEventListener('click', undoLastPunch);
+      document.getElementById('lockAppBtn').addEventListener('click', () => lockApp(false));
+      document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        const [y, m] = selectedMonthStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 2, 15));
+        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+        renderUI();
+      });
+      document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        const [y, m] = selectedMonthStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m, 15));
+        selectedMonthStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+        renderUI();
+      });
+
+      document.getElementById('openToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
+      document.getElementById('openAboutFooterBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.remove('hidden'));
+      document.getElementById('closeToolsBtn').addEventListener('click', () => document.getElementById('toolsModal').classList.add('hidden'));
+      document.getElementById('exportPdfBtn').addEventListener('click', exportMonthlyPdf);
+      document.getElementById('exportCsvBtn').addEventListener('click', exportMonthlyCsv);
+      document.getElementById('backupJsonBtn').addEventListener('click', backupJsonData);
+      document.getElementById('restoreJsonInput').addEventListener('change', restoreJsonData);
+
+      loadData();
+      renderUI();
+      setInterval(renderClockAndSchedule, 1000);
+    })();
+  </script>
+</body>
+</html>
